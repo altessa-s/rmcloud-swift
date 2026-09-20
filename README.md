@@ -151,8 +151,8 @@ The tag runs the suites first — a release is the one artefact nobody re-reads,
 The checksum is computed in the same step from the very bytes that are uploaded, which is the reason this is a workflow and nothing anybody does by
 hand: a remote binary target resolves by `url` **and** `checksum`, and one worked out on somebody's laptop is a checksum of what was on that laptop.
 
-The tag is also the version the framework declares. `project.yml` carries 1.0.0 so that a local build needs no ceremony, and the release overrides it
-— a framework in a 1.2.0 release that calls itself 1.0.0 is a discrepancy nothing would report. To reproduce a release build locally:
+The tag is also the version the framework declares. `project.yml` carries 0.0.0 — a number that says only "not a release", and the release overrides
+it — a framework in a 1.2.0 release that calls itself anything else is a discrepancy nothing would report. To reproduce a release build locally:
 
 ```sh
 RMCLOUD_VERSION=1.2.0 Scripts/build-xcframework.sh

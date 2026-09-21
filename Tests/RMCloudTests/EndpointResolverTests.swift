@@ -226,14 +226,16 @@ func theAuthHostIsNeverTakenFromDiscovery() async throws {
     let transport = MovedHostTransport()
     let secrets = InMemorySecrets()
     try secrets.save("device", as: .deviceToken)
-    let tokens = TokenProvider(transport: transport, secrets: secrets)
+    let tokens = TokenProvider(transport: transport, secrets: secrets, sleeper: RecordingSleeper())
 
     await #expect(throws: CloudError.transport(code: URLError.cannotFindHost.rawValue)) {
         _ = try await tokens.userToken()
     }
-    // One request, to the host this build names. Discovery was not asked, and
-    // the host it would have published was not tried.
-    #expect(transport.requests == ["webapp-prod.cloud.remarkable.engineering/token/json/2/user/new"])
+    // Every request — the exchange retries a host that is not there, like any
+    // other request — went to the host this build names. Discovery was not
+    // asked, and the host it would have published was not tried.
+    #expect(transport.requests.count == RetryPolicy.default.maxAttempts)
+    #expect(Set(transport.requests) == ["webapp-prod.cloud.remarkable.engineering/token/json/2/user/new"])
 }
 
 // MARK: - The rule the two above share

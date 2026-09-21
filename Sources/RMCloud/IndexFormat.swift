@@ -137,8 +137,14 @@ public enum IndexParser {
     /// line is `0:.:<number of records>:<total size>`; then one line per
     /// record.
     public static func parse(_ text: String) throws -> DocumentIndex {
-        var lines = text.split(separator: "\n", omittingEmptySubsequences: false)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
+        // Split at any line break, not at `\n` alone, and trimmed of newlines
+        // as well as spaces: an index written with `\r\n` has to read the same
+        // as one written with `\n`. Neither half of that is idle. A `String`
+        // holds `\r\n` as one character, so a split on `\n` does not split it
+        // at all and the whole file was one header; and `.whitespaces` leaves
+        // a `\r` on, so the header then read as an unknown schema `4\r`.
+        var lines = text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
 
         guard let header = lines.first, !header.isEmpty else {
             throw CloudError.malformedIndex(line: "", reason: "empty index")

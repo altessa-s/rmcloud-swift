@@ -753,12 +753,18 @@ func aFailedExchangeIsNotRemembered() async throws {
     let secrets = InMemorySecrets()
     try secrets.save("device", as: .deviceToken)
     let bought = token(expiringAt: 4_102_444_800)
-    let transport = ScriptedTransport([.init(status: 503), .init(body: bought)])
-    let tokens = TokenProvider(transport: transport, secrets: secrets)
+    // The exchange retries a 5xx like any other request, so "failed" means the
+    // policy's attempts are spent: one 503 per attempt, and the good answer
+    // only for the caller who comes after.
+    let attempts = RetryPolicy.default.maxAttempts
+    let transport = ScriptedTransport(
+        Array(repeating: .init(status: 503), count: attempts) + [.init(body: bought)]
+    )
+    let tokens = TokenProvider(transport: transport, secrets: secrets, sleeper: RecordingSleeper())
 
     await #expect(throws: CloudError.self) { _ = try await tokens.userToken() }
     #expect(try await tokens.userToken() == bought, "the next caller inherited a dead exchange")
-    #expect(transport.requests.count == 2)
+    #expect(transport.requests.count == attempts + 1)
 }
 
 // Foundation's own defect: a pong handler called twice on a connection the

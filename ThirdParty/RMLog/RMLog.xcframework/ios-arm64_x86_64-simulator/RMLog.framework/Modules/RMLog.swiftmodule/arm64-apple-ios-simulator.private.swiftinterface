@@ -1,0 +1,192 @@
+// swift-interface-format-version: 1.0
+// swift-compiler-version: Apple Swift version 6.3.3 (swiftlang-6.3.3.1.3 clang-2100.1.1.101)
+// swift-module-flags: -target arm64-apple-ios18.0-simulator -enable-objc-interop -enable-library-evolution -swift-version 6 -O -enable-experimental-feature DebugDescriptionMacro -module-name RMLog
+// swift-module-flags-ignorable: -no-verify-emitted-module-interface -formal-cxx-interoperability-mode=off -interface-compiler-version 6.3.3
+import CryptoKit
+import Foundation
+import OSLog
+import Swift
+import Synchronization
+import _Concurrency
+import _StringProcessing
+import _SwiftConcurrencyShims
+final public class CollapsingSink : RMLog.LogSink {
+  public init(_ inner: any RMLog.LogSink, window: Foundation.TimeInterval = 60, cap: Swift.Int = 1000, now: @escaping @Sendable () -> Foundation.Date = Date.init)
+  final public func accepts(_ level: RMLog.LogLevel, in category: RMLog.LogCategory) -> Swift.Bool
+  final public func write(_ entry: RMLog.LogEntry)
+  final public func flush() async
+  @objc deinit
+}
+public struct ConsoleSink : RMLog.LogSink {
+  public init(minimum: RMLog.LogLevel = .debug, format: any RMLog.LogFormatting = MessageFormat())
+  public func accepts(_ level: RMLog.LogLevel, in category: RMLog.LogCategory) -> Swift.Bool
+  public func write(_ entry: RMLog.LogEntry)
+}
+public struct FileSink : RMLog.LogSink {
+  public init(directory: Foundation.URL, name: Swift.String, rotation: RMLog.LogRotation = LogRotation(), format: any RMLog.LogFormatting = PlainTextFormat(), bufferedLines: Swift.Int = 4096, minimum: RMLog.LogLevel = .info)
+  public func flush() async
+  public func accepts(_ level: RMLog.LogLevel, in category: RMLog.LogCategory) -> Swift.Bool
+  public func write(_ entry: RMLog.LogEntry)
+}
+public struct JSONLinesFormat : RMLog.LogFormatting {
+  public init()
+  public func format(_ entry: RMLog.LogEntry) -> Swift.String
+}
+public enum Log {
+  public static func bootstrap(sinks: [any RMLog.LogSink], masker: any RMLog.SecretMasking = DigestMasker())
+  public static func logger(_ category: RMLog.LogCategory) -> RMLog.LogChannel
+  public static func flush() async
+  public static func masked(_ secret: Swift.String) -> Swift.String
+  public static func maskedUserText(_ name: Swift.String) -> Swift.String
+}
+public struct LogCategory : Swift.RawRepresentable, Swift.Hashable, Swift.Sendable {
+  public let rawValue: Swift.String
+  public init(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+}
+extension RMLog.LogCategory {
+  public static let rmlog: RMLog.LogCategory
+}
+extension RMLog.LogChannel {
+  public func noting<T>(_ what: Swift.String, _ body: () throws -> T) -> T?
+  public func noting<T>(_ what: Swift.String, isolation: isolated (any _Concurrency.Actor)? = #isolation, _ body: () async throws -> T) async -> T?
+  public func noting<T>(_ what: Swift.String, _ body: () throws -> T?) -> T?
+  public func noting<T>(_ what: Swift.String, isolation: isolated (any _Concurrency.Actor)? = #isolation, _ body: () async throws -> T?) async -> T?
+}
+public struct LogChannel : Swift.Sendable {
+  public init(category: RMLog.LogCategory, sinks: [any RMLog.LogSink], masker: any RMLog.SecretMasking)
+  public func debug(_ message: @autoclosure () -> RMLog.LogMessage, metadata: @autoclosure () -> [Swift.String : RMLog.LogValue] = [:])
+  public func info(_ message: @autoclosure () -> RMLog.LogMessage, metadata: @autoclosure () -> [Swift.String : RMLog.LogValue] = [:])
+  public func notice(_ message: @autoclosure () -> RMLog.LogMessage, metadata: @autoclosure () -> [Swift.String : RMLog.LogValue] = [:])
+  public func error(_ message: @autoclosure () -> RMLog.LogMessage, metadata: @autoclosure () -> [Swift.String : RMLog.LogValue] = [:])
+  public func fault(_ message: @autoclosure () -> RMLog.LogMessage, metadata: @autoclosure () -> [Swift.String : RMLog.LogValue] = [:])
+}
+public protocol LogFormatting : Swift.Sendable {
+  func format(_ entry: RMLog.LogEntry) -> Swift.String
+}
+@frozen public enum LogLevel : Swift.Int, Swift.Comparable, Swift.Sendable, Swift.CaseIterable {
+  case debug
+  case info
+  case notice
+  case error
+  case fault
+  public static func < (lhs: RMLog.LogLevel, rhs: RMLog.LogLevel) -> Swift.Bool
+  public init?(rawValue: Swift.Int)
+  public typealias AllCases = [RMLog.LogLevel]
+  public typealias RawValue = Swift.Int
+  nonisolated public static var allCases: [RMLog.LogLevel] {
+    get
+  }
+  public var rawValue: Swift.Int {
+    get
+  }
+}
+extension RMLog.LogLevel {
+  public static func == (lhs: RMLog.LogLevel, rhs: RMLog.LogLevel) -> Swift.Bool
+}
+public struct LogMessage : Swift.ExpressibleByStringInterpolation, Swift.Sendable {
+  @frozen public enum Tag : Swift.Sendable {
+    case `public`
+    case secret
+    case userText
+    case redacted
+    public func hash(into hasher: inout Swift.Hasher)
+    public var hashValue: Swift.Int {
+      get
+    }
+  }
+  public init(stringLiteral value: Swift.String)
+  public init(stringInterpolation: RMLog.LogMessage.StringInterpolation)
+  public struct StringInterpolation : Swift.StringInterpolationProtocol, Swift.Sendable {
+    public init(literalCapacity: Swift.Int, interpolationCount: Swift.Int)
+    public mutating func appendLiteral(_ literal: Swift.String)
+    public mutating func appendInterpolation(_ value: some CustomStringConvertible)
+    public mutating func appendInterpolation(_ value: some CustomStringConvertible, _ tag: RMLog.LogMessage.Tag)
+    public typealias StringLiteralType = Swift.String
+  }
+  public func rendered(with masker: any RMLog.SecretMasking) -> Swift.String
+  public typealias ExtendedGraphemeClusterLiteralType = Swift.String
+  public typealias StringLiteralType = Swift.String
+  public typealias UnicodeScalarLiteralType = Swift.String
+}
+extension RMLog.LogMessage.Tag {
+  public static func == (lhs: RMLog.LogMessage.Tag, rhs: RMLog.LogMessage.Tag) -> Swift.Bool
+}
+public struct LogRotation : Swift.Sendable {
+  public var maxFileSize: Swift.Int
+  public var maxArchives: Swift.Int
+  public var naming: RMLog.LogRotation.Naming
+  public init(maxFileSize: Swift.Int = 2 * 1_048_576, maxArchives: Swift.Int = 3, naming: RMLog.LogRotation.Naming = .numbered)
+  @frozen public enum Naming : Swift.Sendable {
+    case numbered
+    case timestamped
+    public func hash(into hasher: inout Swift.Hasher)
+    public var hashValue: Swift.Int {
+      get
+    }
+  }
+}
+extension RMLog.LogRotation.Naming {
+  public static func == (lhs: RMLog.LogRotation.Naming, rhs: RMLog.LogRotation.Naming) -> Swift.Bool
+}
+public struct LogEntry : Swift.Sendable {
+  public let level: RMLog.LogLevel
+  public let category: RMLog.LogCategory
+  public let message: Swift.String
+  public let metadata: [Swift.String : Swift.String]
+  public let date: Foundation.Date
+  public init(level: RMLog.LogLevel, category: RMLog.LogCategory, message: Swift.String, metadata: [Swift.String : Swift.String] = [:], date: Foundation.Date)
+  public var text: Swift.String {
+    get
+  }
+}
+public protocol LogSink : Swift.Sendable {
+  func accepts(_ level: RMLog.LogLevel, in category: RMLog.LogCategory) -> Swift.Bool
+  func write(_ entry: RMLog.LogEntry)
+  func flush() async
+}
+extension RMLog.LogSink {
+  public func flush() async
+}
+public struct LogValue : Swift.Sendable, Swift.ExpressibleByStringLiteral {
+  public init(_ value: some CustomStringConvertible, _ tag: RMLog.LogMessage.Tag = .redacted)
+  public init(stringLiteral value: Swift.String)
+  public static func `public`(_ value: some CustomStringConvertible) -> RMLog.LogValue
+  public static func secret(_ value: some CustomStringConvertible) -> RMLog.LogValue
+  public static func userText(_ value: some CustomStringConvertible) -> RMLog.LogValue
+  public typealias ExtendedGraphemeClusterLiteralType = Swift.String
+  public typealias StringLiteralType = Swift.String
+  public typealias UnicodeScalarLiteralType = Swift.String
+}
+public struct MessageFormat : RMLog.LogFormatting {
+  public init()
+  public func format(_ entry: RMLog.LogEntry) -> Swift.String
+}
+final public class OSLogSink : RMLog.LogSink {
+  public init(subsystem: Swift.String, minimum: RMLog.LogLevel = .debug, format: any RMLog.LogFormatting = MessageFormat())
+  final public func accepts(_ level: RMLog.LogLevel, in category: RMLog.LogCategory) -> Swift.Bool
+  final public func write(_ entry: RMLog.LogEntry)
+  @objc deinit
+}
+public struct PlainTextFormat : RMLog.LogFormatting {
+  public init()
+  public func format(_ entry: RMLog.LogEntry) -> Swift.String
+}
+public protocol SecretMasking : Swift.Sendable {
+  func masked(_ secret: Swift.String) -> Swift.String
+  func maskedUserText(_ name: Swift.String) -> Swift.String
+}
+public struct DigestMasker : RMLog.SecretMasking {
+  public init()
+  public func masked(_ secret: Swift.String) -> Swift.String
+  public func maskedUserText(_ name: Swift.String) -> Swift.String
+}
+extension RMLog.LogLevel : Swift.Hashable {}
+extension RMLog.LogLevel : Swift.RawRepresentable {}
+extension RMLog.LogLevel : Swift.BitwiseCopyable {}
+extension RMLog.LogMessage.Tag : Swift.Equatable {}
+extension RMLog.LogMessage.Tag : Swift.Hashable {}
+extension RMLog.LogMessage.Tag : Swift.BitwiseCopyable {}
+extension RMLog.LogRotation.Naming : Swift.Equatable {}
+extension RMLog.LogRotation.Naming : Swift.Hashable {}
+extension RMLog.LogRotation.Naming : Swift.BitwiseCopyable {}

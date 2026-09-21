@@ -17,7 +17,7 @@ import PackageDescription
 
 let package = Package(
     name: "RMCloud",
-    platforms: [.macOS(.v15)],
+    platforms: [.macOS(.v15), .iOS(.v18)],
     products: [
         .library(name: "RMCloud", targets: ["RMCloud"]),
     ],

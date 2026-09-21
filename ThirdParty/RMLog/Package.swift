@@ -40,7 +40,7 @@ import PackageDescription
 
 let package = Package(
     name: "RMLog",
-    platforms: [.macOS(.v15)],
+    platforms: [.macOS(.v15), .iOS(.v18)],
     products: [
         .library(name: "RMLog", targets: ["RMLog"]),
     ],

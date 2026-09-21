@@ -27,6 +27,7 @@ options:
   bundleIdPrefix: io.altessa
   deploymentTarget:
     macOS: "15.0"
+    iOS: "18.0"
   createIntermediateGroups: true
 
 settings:
@@ -41,7 +42,11 @@ settings:
 targets:
   RMCloud:
     type: framework
-    platform: macOS
+    # One target, three slices — not three targets. `supportedDestinations`
+    # keeps the scheme, the product name and the module name single; a target
+    # split per platform would give XcodeGen leave to suffix all three, and the
+    # script below archives by scheme name.
+    supportedDestinations: [macOS, iOS]
     sources:
       - path: Sources/RMCloud
     dependencies:
@@ -67,7 +72,9 @@ targets:
         # then outranked every release that had actually shipped.
         MARKETING_VERSION: "0.0.0"
         CURRENT_PROJECT_VERSION: "1"
-        # Both slices, always: the consumer's release build is universal, and
-        # a framework with one of them fails the link rather than the build.
+        # Every slice the destination has, always: the consumer's release build
+        # is universal, and a framework missing one fails the link rather than
+        # the build. On macOS and the simulator that is two, on an iOS device
+        # one — the script knows which to expect where.
         ARCHS: "$(ARCHS_STANDARD)"
         ONLY_ACTIVE_ARCH: "NO"

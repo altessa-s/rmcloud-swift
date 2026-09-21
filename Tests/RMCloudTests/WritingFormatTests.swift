@@ -230,6 +230,44 @@ func carriesTagsIntoARewrite() throws {
     #expect(object["cPages"] != nil)
 }
 
+// The old file used to be read with `try?`: one that did not parse counted as
+// one without tags, and the rewrite went through with the labels gone. The
+// loss this function exists to prevent, caused by the function itself.
+@Test("A rewrite whose old .content cannot be read is refused, not stripped of its tags")
+func refusesToCarryTagsFromAnUnreadableContent() {
+    let rewritten = Data(#"{"cPages":{"pages":["p1"]}}"#.utf8)
+
+    #expect(throws: CloudError.self) {
+        try ContentTagWriting.carryingTags(from: Data("not json".utf8), into: rewritten, adding: ["sent"], now: moment)
+    }
+    // A JSON array is not a `.content` either: the file is an object or it is
+    // not the file.
+    #expect(throws: CloudError.self) {
+        try ContentTagWriting.carryingTags(from: Data("[]".utf8), into: rewritten, adding: ["sent"], now: moment)
+    }
+}
+
+@Test("A .content that never had tags carries none across and still takes what a send puts on")
+func carriesNoTagsFromAnUntaggedContent() throws {
+    let rewritten = Data(#"{"cPages":{"pages":["p1"]}}"#.utf8)
+
+    // No `tags` key at all: the ordinary state of a document nobody labelled.
+    let untagged = Data(#"{"cPages":{"pages":[]},"zoomMode":"bestFit"}"#.utf8)
+    let fromUntagged = try tags(fields(
+        ContentTagWriting.carryingTags(from: untagged, into: rewritten, adding: ["sent"], now: moment)
+    ))
+    #expect(fromUntagged.map(\.name) == ["sent"])
+    #expect(fromUntagged.map(\.stamp) == [1_700_000_000_500])
+
+    // The key with something else under it is read the same way: not a list
+    // of tags, so nothing to carry.
+    let odd = Data(#"{"cPages":{"pages":[]},"tags":"work"}"#.utf8)
+    let fromOdd = try tags(fields(
+        ContentTagWriting.carryingTags(from: odd, into: rewritten, adding: ["sent"], now: moment)
+    ))
+    #expect(fromOdd.map(\.name) == ["sent"])
+}
+
 // MARK: - A document's index
 
 @Test("A document's index names the document on its count line and sorts its records")

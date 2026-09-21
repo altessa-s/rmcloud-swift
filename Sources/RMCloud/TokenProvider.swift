@@ -29,6 +29,12 @@ public actor TokenProvider {
     private let transport: any HTTPTransporting
     private let secrets: any CloudSecretStoring
     private let now: @Sendable () -> Date
+    /// The same retry policy and the same clock the client runs its protocol
+    /// requests under. The auth host is a host like the other, and a 5xx or a
+    /// dropped connection there is no more permanent than one on the sync
+    /// host — see `send(_:unauthorizedAs:badRequestAs:)`.
+    private let policy: RetryPolicy
+    private let sleeper: any Sleeping
 
     private var cachedUserToken: String?
     private var cachedAt: Date?
@@ -82,12 +88,16 @@ public actor TokenProvider {
         endpoints: CloudEndpoints = .production,
         transport: any HTTPTransporting = URLSessionTransport(),
         secrets: any CloudSecretStoring,
-        now: @escaping @Sendable () -> Date = Date.init
+        now: @escaping @Sendable () -> Date = Date.init,
+        policy: RetryPolicy = .default,
+        sleeper: any Sleeping = SystemSleeper()
     ) {
         self.endpoints = endpoints
         self.transport = transport
         self.secrets = secrets
         self.now = now
+        self.policy = policy
+        self.sleeper = sleeper
     }
 
     /// What this client calls itself when it registers.
@@ -128,8 +138,7 @@ public actor TokenProvider {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = body
 
-        let (data, response) = try await transport.send(request)
-        try transport.validate(response, unauthorizedAs: .invalidOneTimeCode)
+        let data = try await send(request, unauthorizedAs: .invalidOneTimeCode)
         let token = try Self.token(in: data, called: "device token")
 
         guard session == registrationSession else {
@@ -155,15 +164,19 @@ public actor TokenProvider {
     /// knowing counts as revoked: the call answers 401 or 403, and what the
     /// caller asked for is true whichever side made it so. With no device
     /// token there is nothing to revoke and nobody to ask.
+    ///
+    /// Retried like the other two calls to this host, and safely so, because
+    /// the rule above makes the call idempotent: a revocation the server
+    /// carried out but answered with a 5xx is repeated into a 401, and a 401
+    /// is read here as the thing having been done.
     public func revokeDevice() async throws {
         guard let deviceToken = try secrets.secret(.deviceToken) else { return }
         var request = ProtocolRequest.to(endpoints.deleteDeviceToken, method: "POST")
         request.setValue("Bearer \(deviceToken)", forHTTPHeaderField: "Authorization")
         request.httpBody = Data()
 
-        let (_, response) = try await transport.send(request)
         do {
-            try transport.validate(response)
+            _ = try await send(request)
         } catch CloudError.unauthorized {
             Log.cloud.info("device token already refused by the server: nothing left to revoke")
             return
@@ -285,17 +298,11 @@ public actor TokenProvider {
         request.setValue("Bearer \(deviceToken)", forHTTPHeaderField: "Authorization")
         request.httpBody = Data()
 
-        let (data, response) = try await transport.send(request)
-        do {
-            try transport.validate(response)
-        } catch CloudError.http(status: 400, _) {
-            // The account has no tablet. Our request is fixed, so the account
-            // is the only thing that can make this call refuse — the same
-            // device token refuses before a tablet is paired to the account
-            // and succeeds once one is.
-            throw CloudError.accountWithoutTablet
-        }
-
+        // A 400 here means the account has no tablet. Our request is fixed, so
+        // the account is the only thing that can make this call refuse — the
+        // same device token refuses before a tablet is paired to the account
+        // and succeeds once one is.
+        let data = try await send(request, badRequestAs: .accountWithoutTablet)
         let token = try Self.token(in: data, called: "user token")
 
         guard session == registrationSession else {
@@ -351,6 +358,45 @@ public actor TokenProvider {
         }
         Log.cloud.debug("got user token \(token, .secret)")
         return token
+    }
+
+    /// One request to the auth host, sent and checked under the client's own
+    /// retry policy, and the body it answered with.
+    ///
+    /// The three calls to this host used to go out once, bare, while every
+    /// protocol request went through `withRetry`. That made the token the
+    /// weakest link of a sync: the user token is bought on a schedule, in the
+    /// middle of whatever the client was doing, and one 503 or one dropped
+    /// connection on that exchange failed the request that needed it — a
+    /// request which, had it been about a blob, would simply have been tried
+    /// again.
+    ///
+    /// The validation is inside the attempt rather than after it, because that
+    /// is where the retry decision is made: a 5xx has to become
+    /// `CloudError.http` before the policy can see it. What must not be
+    /// repeated is not, by the same policy: 401 becomes `unauthorized` (or
+    /// what `unauthorizedAs` names, a wrong one-time code), 400 becomes
+    /// `badRequestAs` where a caller has a reading for it, and neither is one
+    /// the policy retries — `RetryPolicy.shouldRetry` says so, and the tests
+    /// hold it to that.
+    private func send(
+        _ request: URLRequest,
+        unauthorizedAs unauthorized: CloudError = .unauthorized,
+        badRequestAs badRequest: CloudError? = nil
+    ) async throws -> Data {
+        // A local copy, as `CloudClient` takes one: the attempt must not
+        // capture the actor, only what it needs from it.
+        let transport = transport
+        return try await withRetry(policy: policy, sleeper: sleeper) {
+            let (data, response) = try await transport.send(request)
+            do {
+                try transport.validate(response, unauthorizedAs: unauthorized)
+            } catch let error as CloudError {
+                if case .http(status: 400, _) = error, let badRequest { throw badRequest }
+                throw error
+            }
+            return data
+        }
     }
 
     /// The token a response body is, when it is one at all.

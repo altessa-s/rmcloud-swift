@@ -127,9 +127,15 @@ func revokingARefusedTokenIsNotAFailure() async throws {
     let tokens = TokenProvider(transport: ScriptedTransport([.init(status: 401)]), secrets: secrets)
     try await tokens.revokeDevice()
 
-    // A server that cannot be reached is a different answer, and it is heard.
-    let failing = TokenProvider(transport: ScriptedTransport([.init(status: 503)]), secrets: secrets)
+    // A server that cannot be reached is a different answer, and it is heard —
+    // once the policy has had its attempts. The script runs out after the
+    // first 503 and the double answers 500 from then on.
+    let sleeper = RecordingSleeper()
+    let failing = TokenProvider(
+        transport: ScriptedTransport([.init(status: 503)]), secrets: secrets, sleeper: sleeper
+    )
     await #expect(throws: CloudError.self) { try await failing.revokeDevice() }
+    #expect(sleeper.delays.count == RetryPolicy.default.maxAttempts - 1, "a 5xx on the auth host was not retried")
 }
 
 @Test("With no device token there is nothing to revoke and nobody is asked")
@@ -276,17 +282,45 @@ final class ScriptedTransport: HTTPTransporting {
 // token: the call answers 400 before a tablet is paired
 // and goes through with the very same token afterwards. Read as a plain 400 it
 // reads as "server error, try later" — advice that would never come true.
-@Test("A 400 from the token exchange means the account has no tablet")
+@Test("A 400 from the token exchange means the account has no tablet, and is not asked again")
 func readsAnAccountWithoutATablet() async throws {
     let transport = ScriptedTransport([.init(status: 400, body: "")])
     let secrets = InMemorySecrets()
     try secrets.save("device-token", as: CloudSecret.deviceToken)
-    let tokens = TokenProvider(transport: transport, secrets: secrets)
+    let sleeper = RecordingSleeper()
+    let tokens = TokenProvider(transport: transport, secrets: secrets, sleeper: sleeper)
 
     await #expect(throws: CloudError.accountWithoutTablet) {
         _ = try await tokens.userToken()
     }
     #expect(RetryPolicy.default.shouldRetry(.accountWithoutTablet) == false)
+    // The exchange goes through the same retry as every other request now, and
+    // a 400 must stay what it was: one request, no pause, no second one. A
+    // tablet does not get paired because the question was asked twice.
+    #expect(transport.requests.count == 1, "a 400 on the exchange was repeated")
+    #expect(sleeper.delays.isEmpty)
+}
+
+// The exchange used to go out once, bare, while every protocol request went
+// through the retry. The user token is bought on a schedule, in the middle of
+// whatever the client was doing, so one 503 on the auth host failed a request
+// that would have survived the same 503 on the sync host.
+@Test("A user token exchange that meets a 503 is tried again, like any other request")
+func retriesTheUserTokenExchange() async throws {
+    let secrets = InMemorySecrets()
+    try secrets.save("device-token", as: .deviceToken)
+    let fresh = syntheticToken(claims: #"{"exp": 4102444800}"#)
+    let transport = ScriptedTransport([
+        .init(status: 503),
+        .init(body: fresh),
+    ])
+    let sleeper = RecordingSleeper()
+    let tokens = TokenProvider(transport: transport, secrets: secrets, sleeper: sleeper)
+
+    #expect(try await tokens.userToken() == fresh)
+    #expect(transport.requests.count == 2, "the 503 was taken as final")
+    #expect(sleeper.delays.count == 1, "one pause between two attempts")
+    #expect(try secrets.secret(.userToken) == fresh, "the token bought on the second try was not kept")
 }
 
 // MARK: - How an index is addressed
@@ -380,6 +414,20 @@ func parsesSchemaV4Header() throws {
     #expect(index.schema == .v4)
     #expect(index.entries.count == 2)
     #expect(index.entries.map(\.documentID) == ["doc-1", "doc-2"])
+}
+
+// `.whitespaces` does not include `\r`, so an index whose lines ended in
+// `\r\n` kept the `\r` on every line and its header read as an unknown
+// schema `4\r`. The whole index was refused over a line ending.
+@Test("An index with CRLF line endings parses the same as one with LF")
+func parsesCRLFIndex() throws {
+    let lines = ["4", "0:.:2:160", "aaaa:80000000:doc-1:2:120", "bbbb:80000000:doc-2:1:40"]
+    let unix = try IndexParser.parse(lines.joined(separator: "\n"))
+    let windows = try IndexParser.parse(lines.joined(separator: "\r\n") + "\r\n")
+
+    #expect(windows == unix)
+    #expect(windows.schema == .v4)
+    #expect(windows.entries.map(\.documentID) == ["doc-1", "doc-2"])
 }
 
 @Test("A v4 header count mismatch does not lose the library")

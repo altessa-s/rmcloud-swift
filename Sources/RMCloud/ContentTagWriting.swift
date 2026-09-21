@@ -65,9 +65,16 @@ public enum ContentTagWriting {
     /// The old entries are carried across whole, stamps and all, so a
     /// re-send moves no date the user did not touch. `adding` is what every
     /// send puts on, appended where it is not there already.
+    ///
+    /// An `old` that does not parse is an error, the same as a `new` that does
+    /// not: read as "no tags" it would have the rewrite go through and the
+    /// labels go with it, quietly, which is the very loss this function
+    /// exists to prevent. A record that parses and merely has no `tags` — or
+    /// has something else under that key — is the ordinary case of a document
+    /// nobody labelled, and carries none across.
     public static func carryingTags(from old: Data, into new: Data, adding names: [String], now: Date) throws -> Data {
         var object = try decode(new)
-        let kept = (try? decode(old)["tags"] as? [[String: Any]]) ?? []
+        let kept = (try decode(old)["tags"] as? [[String: Any]]) ?? []
         let known = Set(kept.compactMap { $0["name"] as? String })
         object["tags"] = kept + names.filter { !known.contains($0) }.map {
             ["name": $0, "timestamp": milliseconds(now)]
@@ -83,7 +90,17 @@ public enum ContentTagWriting {
     }
 
     private static func decode(_ data: Data) throws -> [String: Any] {
-        guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+        // Bytes that are not JSON at all are the protocol's fault, the same as
+        // JSON of the wrong shape, and are reported in the protocol's own
+        // error: a caller sorting what went wrong should not have to know
+        // that `JSONSerialization` speaks in `NSError`.
+        let parsed: Any
+        do {
+            parsed = try JSONSerialization.jsonObject(with: data)
+        } catch {
+            throw CloudError.malformedResponse("content is not JSON: \(error.localizedDescription)")
+        }
+        guard let object = parsed as? [String: Any] else {
             throw CloudError.malformedResponse("content is not a JSON object")
         }
         return object

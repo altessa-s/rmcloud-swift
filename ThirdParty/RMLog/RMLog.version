@@ -1,5 +1,5 @@
-tag = v0.10.0
-sha256 = 0d5e9a37309beb781d8d8e5034253f78d56f68cf207a9063bba44b05a43cda06
-asset = RMLog.xcframework.zip (id 578987695, 497528 bytes)
+tag = v0.10.1
+sha256 = 299f51db1e82fc040aeff94895728a3b7e6455fbefdf7cf240f8718abd6dd335
+asset = RMLog.xcframework.zip (id 583570445, 497702 bytes)
 repo = https://github.com/altessa-s/rmlog-swift
 fetched by Scripts/fetch-framework.sh — do not edit by hand

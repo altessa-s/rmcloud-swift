@@ -10,11 +10,11 @@
 		</data>
 		<key>Info.plist</key>
 		<data>
-		X4N2utDncTO3DZgJFWxuSgCUBFg=
+		WukY09QYFrDTvudHS8asEHkUnAg=
 		</data>
 		<key>Modules/RMLog.swiftmodule/arm64-apple-ios-simulator.abi.json</key>
 		<data>
-		Z0czOaxiSW6JkeGNyBeKC3lh4Wo=
+		5WbE4ICa6vrzaWBARjCs1HIfjHU=
 		</data>
 		<key>Modules/RMLog.swiftmodule/arm64-apple-ios-simulator.private.swiftinterface</key>
 		<data>
@@ -34,7 +34,7 @@
 		</data>
 		<key>Modules/RMLog.swiftmodule/x86_64-apple-ios-simulator.abi.json</key>
 		<data>
-		Z0czOaxiSW6JkeGNyBeKC3lh4Wo=
+		5WbE4ICa6vrzaWBARjCs1HIfjHU=
 		</data>
 		<key>Modules/RMLog.swiftmodule/x86_64-apple-ios-simulator.private.swiftinterface</key>
 		<data>
@@ -70,7 +70,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			yjnatyjoZFAnxf2PhC4X5fj/KXpJGmNfRos07a0MBDE=
+			UzQ+qm+2BtakbmXKBd5LXuRy4E/nFQFez8d686FK5/0=
 			</data>
 		</dict>
 		<key>Modules/RMLog.swiftmodule/arm64-apple-ios-simulator.private.swiftinterface</key>
@@ -105,7 +105,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			yjnatyjoZFAnxf2PhC4X5fj/KXpJGmNfRos07a0MBDE=
+			UzQ+qm+2BtakbmXKBd5LXuRy4E/nFQFez8d686FK5/0=
 			</data>
 		</dict>
 		<key>Modules/RMLog.swiftmodule/x86_64-apple-ios-simulator.private.swiftinterface</key>

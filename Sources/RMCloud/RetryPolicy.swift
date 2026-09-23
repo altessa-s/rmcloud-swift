@@ -58,7 +58,7 @@ public struct RetryPolicy: Sendable {
         switch error {
         case .transport, .rateLimited:
             true
-        case .http(let status, _):
+        case .http(let status, _), .writeRejected(let status, _):
             (500...599).contains(status)
         // A root conflict does get retried, but not here: repeating the same
         // write would point the root at a tree built on a generation that has
@@ -77,7 +77,7 @@ public struct RetryPolicy: Sendable {
         case .notOnThisPlan, .nothingToAsk,
              .notRegistered, .invalidOneTimeCode, .unauthorized,
              .unsupportedSchema, .malformedIndex, .malformedResponse, .hashMismatch,
-             .rootConflict, .writeRejected, .missingHash, .noRootYet, .accountWithoutTablet,
+             .rootConflict, .missingHash, .noRootYet, .accountWithoutTablet,
              .oversizedResponse:
             false
         }

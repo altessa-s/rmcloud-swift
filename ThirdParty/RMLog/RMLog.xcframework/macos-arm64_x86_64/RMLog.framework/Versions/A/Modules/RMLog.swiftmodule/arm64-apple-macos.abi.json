@@ -5334,63 +5334,63 @@
     {
       "filePath": "\/Users\/runner\/work\/rmlog-swift\/rmlog-swift\/Sources\/RMLog\/Writers\/File\/FileSink.swift",
       "kind": "Array",
-      "offset": 13025,
+      "offset": 13159,
       "length": 2,
       "value": "[]"
     },
     {
       "filePath": "\/Users\/runner\/work\/rmlog-swift\/rmlog-swift\/Sources\/RMLog\/Writers\/File\/FileSink.swift",
       "kind": "StringLiteral",
-      "offset": 13062,
+      "offset": 13196,
       "length": 5,
       "value": "\"log\""
     },
     {
       "filePath": "\/Users\/runner\/work\/rmlog-swift\/rmlog-swift\/Sources\/RMLog\/Writers\/File\/FileSink.swift",
       "kind": "StringLiteral",
-      "offset": 13120,
+      "offset": 13254,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/runner\/work\/rmlog-swift\/rmlog-swift\/Sources\/RMLog\/Writers\/File\/FileSink.swift",
       "kind": "StringLiteral",
-      "offset": 13125,
+      "offset": 13259,
       "length": 19,
       "value": "\".\""
     },
     {
       "filePath": "\/Users\/runner\/work\/rmlog-swift\/rmlog-swift\/Sources\/RMLog\/Writers\/File\/FileSink.swift",
       "kind": "StringLiteral",
-      "offset": 13143,
+      "offset": 13277,
       "length": 1,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/runner\/work\/rmlog-swift\/rmlog-swift\/Sources\/RMLog\/Writers\/File\/FileSink.swift",
       "kind": "StringLiteral",
-      "offset": 13345,
+      "offset": 13479,
       "length": 10,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/runner\/work\/rmlog-swift\/rmlog-swift\/Sources\/RMLog\/Writers\/File\/FileSink.swift",
       "kind": "StringLiteral",
-      "offset": 13353,
+      "offset": 13487,
       "length": 1,
       "value": "\"_\""
     },
     {
       "filePath": "\/Users\/runner\/work\/rmlog-swift\/rmlog-swift\/Sources\/RMLog\/Writers\/File\/FileSink.swift",
       "kind": "BooleanLiteral",
-      "offset": 13409,
+      "offset": 13543,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/runner\/work\/rmlog-swift\/rmlog-swift\/Sources\/RMLog\/Writers\/File\/FileSink.swift",
       "kind": "IntegerLiteral",
-      "offset": 13468,
+      "offset": 13602,
       "length": 1,
       "value": "1"
     },

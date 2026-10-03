@@ -59,6 +59,10 @@ func theUnfamiliarIsNews() {
     #expect(RootAdvisory(missingHashes: 3).isOrdinary == false)
     // Nought missing hashes is not missing hashes.
     #expect(RootAdvisory(hasMissingHashes: false, missingHashes: 0).isOrdinary)
+    // Firmware 3.29 reads a switch off HTTP/2 from the same body: asked for,
+    // it is news; declined, it is not.
+    #expect(RootAdvisory(disableHTTP2: true).isOrdinary == false)
+    #expect(RootAdvisory(disableHTTP2: false).isOrdinary)
 }
 
 // MARK: - What is said, and when
@@ -116,6 +120,19 @@ func anAppearingHintIsNamed() {
     #expect(hint.contains("not followed"))
 }
 
+@Test("A switch off HTTP/2 is named, and named as not followed")
+func anHTTP2SwitchIsNamed() {
+    var switched = live
+    switched.disableHTTP2 = true
+
+    let remarks = switched.remarks(since: live)
+    #expect(remarks.count == 1)
+    let hint = remarks.joined()
+    #expect(hint.contains("disableHTTP2 nothing → true"))
+    #expect(hint.contains("not followed"))
+    #expect(switched.remarks(since: nil).contains { $0.hasPrefix("disableHTTP2 true") })
+}
+
 @Test("Missing hashes are reported by their number, and their going away too")
 func missingHashesAreCounted() {
     var lacking = live
@@ -137,7 +154,7 @@ private func client(root body: String) throws -> CloudClient {
 // and some accounts answer `v3` with the two we act on and nothing else. A
 // decoder that required any of them would refuse the pointer — which is the
 // library, for a field nobody reads.
-@Test("Every shape of the pointer decodes, from the barest to the whole seven")
+@Test("Every shape of the pointer decodes, from the barest to the whole eight")
 func everyPointerShapeDecodes() async throws {
     let bare = try await client(root: #"{"hash":"abc","generation":1}"#).root()
     #expect(bare == CloudRoot(hash: "abc", generation: 1))
@@ -152,7 +169,8 @@ func everyPointerShapeDecodes() async throws {
     // with yet.
     let whole = try await client(root: """
         {"hash":"abc","generation":3,"schemaVersion":4,"hasMissingHashes":true,\
-        "missingHashes":["aa","bb"],"maxNetworkJobs":6,"deletedImmutableAction":"rollback"}
+        "missingHashes":["aa","bb"],"maxNetworkJobs":6,"deletedImmutableAction":"rollback",\
+        "disableHTTP2":false}
         """).root()
     #expect(whole.generation == 3)
 }

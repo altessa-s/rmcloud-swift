@@ -9,7 +9,9 @@ import Foundation
 /// The pointer carries more than a hash and a generation. On a real account
 /// both root paths answer with four fields — the two we act on, plus
 /// `schemaVersion` and `deletedImmutableAction` — while `maxNetworkJobs`,
-/// `hasMissingHashes` and `missingHashes` never appear at all.
+/// `hasMissingHashes` and `missingHashes` never appear at all. Firmware 3.29's
+/// parser of the same body reads one more, `disableHTTP2` — the service's way
+/// of turning a client off HTTP/2 — and it has not been seen on the wire yet.
 ///
 /// **Nothing here is obeyed, and that is a decision rather than an omission.**
 /// The schema is taken from the index's own first line, which is the more
@@ -30,6 +32,10 @@ struct RootAdvisory: Sendable, Equatable {
     var maxNetworkJobs: Int?
     var hasMissingHashes: Bool?
     var missingHashes: Int?
+    /// Not obeyed either: the transport is the system's, and which protocol it
+    /// speaks is negotiated below this client. Read so that the day the
+    /// service starts asking is a line in the log.
+    var disableHTTP2: Bool?
 
     /// Whether this is the ordinary state of every account we have seen, as
     /// opposed to the service doing something this client does not implement.
@@ -48,6 +54,7 @@ struct RootAdvisory: Sendable, Equatable {
             && maxNetworkJobs == nil
             && hasMissingHashes != true
             && (missingHashes ?? 0) == 0
+            && disableHTTP2 != true
     }
 
     /// The two directives that ask nothing of a client which has no immutable
@@ -87,6 +94,12 @@ struct RootAdvisory: Sendable, Equatable {
         if hasMissingHashes != previous.hasMissingHashes || missingHashes != previous.missingHashes {
             remarks.append(missingHashesRemark)
         }
+        if disableHTTP2 != previous.disableHTTP2 {
+            remarks.append(
+                "disableHTTP2 \(Self.spell(previous.disableHTTP2)) → \(Self.spell(disableHTTP2))"
+                    + " (not followed: the system transport negotiates the protocol)"
+            )
+        }
         return remarks
     }
 
@@ -99,6 +112,9 @@ struct RootAdvisory: Sendable, Equatable {
             lines.append("maxNetworkJobs \(maxNetworkJobs) (not followed: this client keeps its own ceiling)")
         }
         if hasMissingHashes == true || (missingHashes ?? 0) > 0 { lines.append(missingHashesRemark) }
+        if let disableHTTP2 {
+            lines.append("disableHTTP2 \(disableHTTP2) (not followed: the system transport negotiates the protocol)")
+        }
         return lines
     }
 
@@ -121,5 +137,9 @@ struct RootAdvisory: Sendable, Equatable {
 
     private static func spell(_ value: String?) -> String {
         value ?? "nothing"
+    }
+
+    private static func spell(_ value: Bool?) -> String {
+        value.map { "\($0)" } ?? "nothing"
     }
 }

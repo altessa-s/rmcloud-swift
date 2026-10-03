@@ -227,9 +227,9 @@ extension CloudClient {
     /// The pointer as it arrives. Two fields are acted on; the rest are read
     /// so that a change in them can be noticed — see `RootAdvisory`.
     ///
-    /// Every one of the five is optional because every one of them is: the v3
+    /// Every one of the six is optional because every one of them is: the v3
     /// body on some accounts carries the hash and the generation and nothing
-    /// else, and three of these have never been seen on the wire at all.
+    /// else, and four of these have never been seen on the wire at all.
     struct RootResponse: Decodable {
         let hash: String
         let generation: Int64
@@ -238,6 +238,7 @@ extension CloudClient {
         var maxNetworkJobs: Int?
         var hasMissingHashes: Bool?
         var missingHashes: [String]?
+        var disableHTTP2: Bool?
 
         var advisory: RootAdvisory {
             RootAdvisory(
@@ -245,7 +246,8 @@ extension CloudClient {
                 deletedImmutableAction: deletedImmutableAction,
                 maxNetworkJobs: maxNetworkJobs,
                 hasMissingHashes: hasMissingHashes,
-                missingHashes: missingHashes?.count
+                missingHashes: missingHashes?.count,
+                disableHTTP2: disableHTTP2
             )
         }
     }

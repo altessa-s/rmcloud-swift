@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import Foundation
-import RMLog
+import RedactLog
 import Synchronization
 
 /// The wire, written out: what went to the service and what came back.

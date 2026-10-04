@@ -79,7 +79,7 @@ jobs:
       - run: brew install xcodegen
       # The artefact a consumer links against, built the way a release is: the
       # script's own checks refuse a static framework and one missing a slice,
-      # and both are failures that otherwise surface only in the consumer. No
-      # credentials and no network: the one framework this links is committed
-      # under `ThirdParty/`.
+      # and both are failures that otherwise surface only in the consumer. The
+      # one framework this links is RedactLog's public release, fetched by
+      # `Scripts/fetch-redactlog.sh` and checked against `Scripts/RedactLog.pin`.
       - run: Scripts/build-xcframework.sh

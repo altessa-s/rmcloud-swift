@@ -24,10 +24,3 @@ graphify-out/
 # before it. `.swiftlint.yml` excludes the same directory, and if the two ever
 # disagree again, that file is the one telling the truth.
 RMCloud.xcodeproj/
-
-# The framework this one links against, and it is committed: it is the
-# application's own artefact, the version has to agree with it, and a clone
-# has to build with no network. The `*.xcframework` rule above is about what
-# this package *produces*, so the one it *consumes* is named back in.
-!ThirdParty/**
-!ThirdParty/**/*.xcframework

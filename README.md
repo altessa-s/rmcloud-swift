@@ -18,7 +18,7 @@ either. That is the asset, and it is the reason for the wall.
 
 ## What it depends on
 
-`RMLog`, for the lines it writes. Nothing else.
+[`RedactLog`](https://github.com/altessa-s/redactlog-swift), for the lines it writes, pinned to a release tag (`exact: "0.9.0"`). Nothing else.
 
 That was not free, and the seams are worth knowing about.
 
@@ -30,7 +30,7 @@ That was not free, and the seams are worth knowing about.
 - **What it answers with is its own.** `CloudRoot`, `DocumentIndex`, `IndexEntry`, `CloudError`, `CloudPlan`. A host that has a domain of its own
   converts at the door — two fields for the plan, one `switch` for the error — which is cheaper than either side importing the other to say the same
   two strings.
-- **Diagnostics go to whatever the host installed.** `Log.cloud` on `RMLog`; the category is declared here, because a package that logs names its own
+- **Diagnostics go to whatever the host installed.** `Log.cloud` on `RedactLog`; the category is declared here, because a package that logs names its own
   channel.
 
 ## Design
@@ -82,7 +82,8 @@ targets: [
 ]
 ```
 
-`RMLog` comes with it: the framework is committed under `ThirdParty/` and declared as a path dependency, so a consumer names nothing else.
+`RedactLog` comes with it: SwiftPM resolves it from its own repository at the pinned tag, so a consumer names nothing else. A consumer that also
+depends on `RedactLog` itself has to accept the same version — the pin is exact on purpose.
 
 **As a binary.** A release attaches `RMCloud.xcframework.zip`, a dynamic framework of both macOS slices, and the consumer names it as a binary target:
 
@@ -92,8 +93,9 @@ targets: [
 ]
 ```
 
-It **links** `RMLog` and does not embed it: two copies of `LogSink` in one process means a sink the host installed never receives the lines this one
-writes, silently and at run time. So a host carries one copy of each framework and links the rest.
+It **links** `RedactLog` and does not embed it: two copies of `LogSink` in one process means a sink the host installed never receives the lines this
+one writes, silently and at run time. So a host carries one copy of each framework and links the rest — `RedactLog.xcframework` from the release
+`Scripts/RedactLog.pin` names.
 
 A binary module carries no testability, so a consumer's tests see the public API only. A test that needs the inside of the protocol belongs in this
 repository.
@@ -122,7 +124,7 @@ for entry in index.entries where entry.isDocument {
 ```sh
 Scripts/build-xcframework.sh                                # -> build/RMCloud.xcframework
 Scripts/build-xcframework.sh ../some-app/ThirdParty/RMCloud # and install it there
-Scripts/fetch-framework.sh RMLog                            # refresh the dependency
+Scripts/fetch-redactlog.sh                                  # the RedactLog it links, into build/deps/
 ```
 
 `Package.swift` is the real project; `project.yml` beside it declares the same sources once more as a framework target, because SwiftPM cannot produce

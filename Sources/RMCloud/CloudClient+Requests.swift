@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import Foundation
-import RMLog
+import RedactLog
 
 /// What every request above is made of: a token that may have to be bought
 /// again, a header the protocol demands, and a retry that knows what is worth

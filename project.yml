@@ -11,14 +11,14 @@
 # shared through `Contents/Frameworks` is what keeps a type from existing twice in
 # a process.
 #
-# `RMLog` is **linked and not embedded**, which is the whole point of this file. It
-# is a framework the consuming application already carries; embedding a copy here
-# would put two `LogSink` protocols in one process, and then a sink the host
-# installed would never receive the lines this package writes — silently, at run
-# time, with nothing in a build to say so. Linked instead, this framework records
-# `@rpath/RMLog.framework` and finds the host's copy. The versions therefore have
-# to agree: `ThirdParty/RMLog/RMLog.version` says which release the artefact came
-# from.
+# `RedactLog` is **linked and not embedded**, which is the whole point of this
+# file. It is a framework the consuming application already carries; embedding a
+# copy here would put two `LogSink` protocols in one process, and then a sink the
+# host installed would never receive the lines this package writes — silently, at
+# run time, with nothing in a build to say so. Linked instead, this framework
+# records `@rpath/RedactLog.framework` and finds the host's copy. The versions
+# therefore have to agree: `Scripts/RedactLog.pin` names the release, and
+# `Scripts/fetch-redactlog.sh` puts its framework in `build/deps/`.
 #
 # Generated project, not committed: run the script.
 name: RMCloud
@@ -50,7 +50,7 @@ targets:
     sources:
       - path: Sources/RMCloud
     dependencies:
-      - framework: ThirdParty/RMLog/RMLog.xcframework
+      - framework: build/deps/RedactLog.xcframework
         embed: false
     settings:
       base:

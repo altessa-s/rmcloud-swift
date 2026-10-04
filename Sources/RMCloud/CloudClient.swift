@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import Foundation
-import RMLog
+import RedactLog
 
 /// The protocol client: the root, the indexes, the blobs — and, since the
 /// volume learned to write, the uploads and the root pointer as well.

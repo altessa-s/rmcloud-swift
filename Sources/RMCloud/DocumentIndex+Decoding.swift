@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import Foundation
-import RMLog
+import RedactLog
 
 public extension DocumentIndex {
     /// The index as fetched, parsed and held to its address.

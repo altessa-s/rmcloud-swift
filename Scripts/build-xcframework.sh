@@ -42,6 +42,11 @@ fi
 # and took the script with it under `set -e`.
 mkdir -p "$build"
 
+# The logger the framework links and does not embed: the release
+# `Scripts/RedactLog.pin` names, fetched into build/deps/ and checked against
+# its checksum before anything is built against it.
+Scripts/fetch-redactlog.sh
+
 # A stale project is worse than none: a source file added since the last run
 # would be missing from the archive and nowhere in the diff.
 echo "==> generating RMCloud.xcodeproj"

@@ -2,11 +2,11 @@
 // Use of this source code is governed by an MIT-style license that can be
 // found in the LICENSE file.
 
-import RMLog
+import RedactLog
 
 /// The channel this package writes on.
 ///
-/// Named here because a category is a label `RMLog` does not own: what the parts
+/// Named here because a category is a label `RedactLog` does not own: what the parts
 /// of a process are is a fact about the process, and a package that logs is one
 /// of those parts. It used to be declared with an application's other ten, which
 /// is exactly what it could not keep being if the protocol was to be reusable.

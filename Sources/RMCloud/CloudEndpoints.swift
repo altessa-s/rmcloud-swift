@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import Foundation
-import RMLog
+import RedactLog
 
 /// The only place the protocol's hosts and paths live in.
 ///

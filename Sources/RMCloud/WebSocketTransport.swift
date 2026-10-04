@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import Foundation
-import RMLog
+import RedactLog
 import Synchronization
 
 /// One frame off the push channel, in this package's own words.

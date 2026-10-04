@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import Foundation
-import RMLog
+import RedactLog
 
 /// The cloud's push channel: a websocket that carries "SyncComplete" when
 /// another client finishes writing the root — the `broadcast` flag of the

@@ -4,7 +4,7 @@
 
 import Foundation
 @testable import RMCloud
-import RMLog
+import RedactLog
 import Testing
 
 /// The lines as a person would see them. A message is built with tags and

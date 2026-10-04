@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import Foundation
-import RMLog
+import RedactLog
 
 /// The tokens: the long-lived device token and the short-lived user token,
 /// both in the Keychain. Only a ready token is handed outwards, never the

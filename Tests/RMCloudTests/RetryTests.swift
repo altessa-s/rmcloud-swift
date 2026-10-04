@@ -4,7 +4,7 @@
 
 import Foundation
 @testable import RMCloud
-import RMLog
+import RedactLog
 import Synchronization
 import Testing
 

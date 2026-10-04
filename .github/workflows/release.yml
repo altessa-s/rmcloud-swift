@@ -118,8 +118,8 @@ jobs:
             echo "]"
             echo '```'
             echo
-            echo "\`RMLog\` comes with it: the framework is committed under \`ThirdParty/\` and"
-            echo "declared as a path dependency, and a consumer names nothing else."
+            echo "\`RedactLog\` comes with it, resolved from its own repository at the tag this"
+            echo "release pins, and a consumer names nothing else."
             echo
             echo "### As a binary"
             echo
@@ -134,11 +134,11 @@ jobs:
             echo ")"
             echo '```'
             echo
-            echo "It **links** \`RMLog.framework\` and does not embed it: two copies of"
+            echo "It **links** \`RedactLog.framework\` and does not embed it: two copies of"
             echo "\`LogSink\` in one process means a sink the host installed never receives the"
             echo "lines this one writes, silently and at run time. So a host that takes this"
-            echo "binary carries \`RMLog\` as well, at the version stamped under \`ThirdParty/\`"
-            echo "in this tag."
+            echo "binary carries \`RedactLog\` as well, at the version \`Scripts/RedactLog.pin\`"
+            echo "names in this tag."
             echo
             echo "A binary module carries no testability, so a consumer's tests see the public"
             echo "API only. A test that needs the inside of the protocol belongs in this"

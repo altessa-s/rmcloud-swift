@@ -4,7 +4,7 @@
 
 import CryptoKit
 import Foundation
-import RMLog
+import RedactLog
 
 /// The schema version of an index file. We read both, we write only v4.
 /// Frozen, for the reason given on `CloudError`: this framework ships in lockstep

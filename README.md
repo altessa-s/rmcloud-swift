@@ -1,13 +1,12 @@
 # RMCloud
 
 The reMarkable cloud's sync protocol, and nothing else: the client, the token exchange, the index format, the notification socket, the retry policy.
-Unofficial and reverse-engineered — which is exactly why it is worth having behind a wall of its own.
+Unofficial and reverse-engineered, and written down as code so that the next client does not have to learn it again.
 
 A standalone package. It was carved out of a macOS application once it stopped needing anything of it: it asks for the three secrets it holds through
 a port, reports progress as a closure, and answers with types of its own.
 
 Requires Swift 6.3 or later. Targets macOS 15+, iOS 18+, Linux, and Windows.
-The Linux and Windows transports require a portable RedactLog revision; the current 0.9.0 pin still imports Apple-only CryptoKit and OSLog.
 
 ## Why it exists
 

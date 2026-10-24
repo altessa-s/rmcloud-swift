@@ -1,10 +1,12 @@
 # RMCloud
 
 The reMarkable cloud's sync protocol, and nothing else: the client, the token exchange, the index format, the notification socket, the retry policy.
-Unofficial and reverse-engineered — which is exactly why it is worth having behind a wall of its own.
+Unofficial and reverse-engineered, and written down as code so that the next client does not have to learn it again.
 
 A standalone package. It was carved out of a macOS application once it stopped needing anything of it: it asks for the three secrets it holds through
 a port, reports progress as a closure, and answers with types of its own.
+
+Requires Swift 6.3 or later. Targets macOS 15+, iOS 18+, Linux, and Windows.
 
 ## Why it exists
 
@@ -14,11 +16,13 @@ product.
 
 Everything here was measured against a live account. The schema versions, the hash addressing, the generation dance on a root write, the
 `sourceDeviceDesc` a notification carries, the claims a user token puts in its payload: none of it is invented, and none of it is specified anywhere
-either. That is the asset, and it is the reason for the wall.
+either.
 
 ## What it depends on
 
-[`RedactLog`](https://github.com/altessa-s/redactlog-swift), for the lines it writes, pinned to a release tag (`exact: "0.9.0"`). Nothing else.
+[`RedactLog`](https://github.com/altessa-s/redactlog-swift), for the lines it writes, pinned to a release tag (`exact: "0.10.0"`). Hashing uses CryptoKit on Apple platforms and swift-crypto elsewhere.
+Linux and Windows use swift-nio and swift-nio-ssl for WebSockets, behind the same transport protocols.
+Apple builds retain the URLSession WebSocket client and do not link NIO into RMCloud.
 
 That was not free, and the seams are worth knowing about.
 

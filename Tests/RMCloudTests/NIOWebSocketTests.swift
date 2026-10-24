@@ -94,4 +94,3 @@ func nioHandshakeCancellationClosesConnection() async throws {
     #expect(await server.stops(url))
 }
 #endif
-

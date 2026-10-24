@@ -786,7 +786,11 @@ func aPingAnsweredTwiceResumesOnce() async {
     let abort = POSIXError(.ECONNABORTED)
     #else
     // The bridged `POSIXError` off Apple is built from its raw value.
-    let abort = POSIXError(POSIXErrorCode(rawValue: ECONNABORTED)!)
+    guard let code = POSIXErrorCode(rawValue: ECONNABORTED) else {
+        Issue.record("no POSIX code for ECONNABORTED")
+        return
+    }
+    let abort = POSIXError(code)
     #endif
     probe.answerTwice(abort)
 

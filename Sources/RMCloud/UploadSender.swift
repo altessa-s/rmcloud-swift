@@ -3,6 +3,9 @@
 // found in the LICENSE file.
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import Synchronization
 
 /// The upload sender: progress reports while the body goes out.

@@ -3,6 +3,9 @@
 // found in the LICENSE file.
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 @testable import RMCloud
 import Testing
 
@@ -52,6 +55,8 @@ func downloadSessionBoundsItsConnections() {
 // silently as on any other. On `.shared` no delegate watches the hop, so a
 // signed storage URL off the origin would be answered with the Bearer token —
 // the one path in the package `followRedirect` did not reach.
+#if canImport(Darwin)
+// Only the Apple backend performs the WebSocket upgrade through a URLSession.
 @Test("The websocket handshake runs on the small requests' session, not on .shared")
 func webSocketSessionIsTheRequestsSession() {
     let session = URLSessionWebSocket().session
@@ -61,6 +66,8 @@ func webSocketSessionIsTheRequestsSession() {
     #expect(session.configuration.urlCache == nil)
     #expect(session.delegate is RedirectWatcher)
 }
+
+#endif
 
 @Test("An upload keeps no cache it was handed")
 func uploadConfigurationDropsAnInheritedCache() {

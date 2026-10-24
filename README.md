@@ -7,6 +7,9 @@ A standalone package. It was carved out of a macOS application once it stopped n
 a port, reports progress as a closure, and answers with types of its own.
 
 Requires Swift 6.3 or later. Targets macOS 15+, iOS 18+, Linux, and Windows.
+On Windows the HTTP side works and the notification socket does not: the system has no WebSocket client and
+`swift-nio-ssl` does not build there, so `NotificationStream` reports `unsupportedOnThisPlatform` and stops rather
+than reconnecting to something that will never answer.
 
 ## Why it exists
 

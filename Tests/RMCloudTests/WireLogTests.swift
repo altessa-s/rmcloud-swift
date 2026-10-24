@@ -3,6 +3,9 @@
 // found in the LICENSE file.
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 @testable import RMCloud
 import RedactLog
 import Testing
@@ -130,7 +133,9 @@ func aRequestIsDescribed() throws {
 
     let lines = WireLog.describe(request, level: .headers).rendered()
     #expect(lines.first == "→ GET https://eu.tectonic.remarkable.com/sync/v4/root")
-    #expect(lines.contains("  → rm-filename: roothash"))
+    // Header names are case-insensitive, and the loading system on each
+    // platform normalises them its own way: matched without the case.
+    #expect(lines.contains { $0.lowercased() == "  → rm-filename: roothash" })
     #expect(!lines.joined().contains("secret-token-value"))
     // Off is off: no line at all, whatever the request holds.
     #expect(WireLog.describe(request, level: .off).isEmpty)
@@ -151,7 +156,7 @@ func aResponseIsDescribed() throws {
 
     let lines = WireLog.describe(response, body: body, for: request, level: .bodies).rendered()
     #expect(lines.first == "← 400 POST https://host/sync/v3/check-files")
-    #expect(lines.contains("  ← rm-token-ttl-hint: 4653"))
+    #expect(lines.contains { $0.lowercased() == "  ← rm-token-ttl-hint: 4653" })
     // The sentence in the body is the reason this level exists: a 400 from
     // this service explains itself there and nowhere else.
     #expect(lines.contains { $0.contains("invalid root schema") })

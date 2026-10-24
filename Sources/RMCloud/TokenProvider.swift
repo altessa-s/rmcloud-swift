@@ -3,6 +3,9 @@
 // found in the LICENSE file.
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import RedactLog
 
 /// The tokens: the long-lived device token and the short-lived user token,

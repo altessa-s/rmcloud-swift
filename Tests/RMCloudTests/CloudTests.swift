@@ -3,6 +3,9 @@
 // found in the LICENSE file.
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 @testable import RMCloud
 import Synchronization
 import Testing

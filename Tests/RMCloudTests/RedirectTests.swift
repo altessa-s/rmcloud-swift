@@ -3,6 +3,9 @@
 // found in the LICENSE file.
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 @testable import RMCloud
 import Testing
 
@@ -53,6 +56,40 @@ func aRedirectInsideTheOriginKeepsTheToken() {
     #expect(carriesToken(hop(from: "https://Sync.Host/a", to: "HTTPS://sync.host/b")))
 }
 
+@Test("A second hop elsewhere is not handed the token back")
+func aSecondHopElsewhereDoesNotGetTheTokenBack() {
+    let started = authorized(
+        URL.constant("https://eu.tectonic.remarkable.com/sync/v3/files/abc")
+    )
+    // Hop 1 leaves the origin, and the loading system hands its request over
+    // with no header — which is what a delegate actually sees.
+    let first = Redirects.followed(
+        URLRequest(url: URL.constant("https://storage.invalid/signed/one")),
+        from: URL.constant("https://eu.tectonic.remarkable.com/sync/v3/files/abc"),
+        startedAt: started
+    )
+    #expect(!carriesToken(first))
+
+    // Hop 2 stays on the host hop 1 was sent to: same-origin with the hop
+    // before it, and nowhere near the task's. Read against `previous` this is
+    // ours, and the storage host is handed a reMarkable credential.
+    let second = Redirects.followed(
+        URLRequest(url: URL.constant("https://storage.invalid/signed/two")),
+        from: URL.constant("https://storage.invalid/signed/one"),
+        startedAt: started
+    )
+    #expect(!carriesToken(second), "a hop inside the storage host got the user token back")
+
+    // The other half, through the same wiring: a hop inside our own origin is
+    // the same conversation and still gets the token back.
+    let inside = Redirects.followed(
+        URLRequest(url: URL.constant("https://eu.tectonic.remarkable.com/storage/abc")),
+        from: URL.constant("https://eu.tectonic.remarkable.com/sync/v3/files/abc"),
+        startedAt: started
+    )
+    #expect(carriesToken(inside))
+}
+
 @Test("A redirect that leaves the origin does not carry the token")
 func aRedirectOffTheOriginDropsTheToken() {
     // The case this exists for: storage answers with a signed URL of its own,
@@ -92,8 +129,8 @@ func aRedirectWithoutATokenIsUntouched() {
 // MARK: - That the rule is reached
 
 /// The header as it arrived, whatever case the loading system spelled it in.
-private func authorization(seen at: URL) -> String? {
-    ScriptedServer.headers(at)
+private func authorization(seen at: URL, server: ScriptedServer) -> String? {
+    server.headers(at)
         .first { $0.key.caseInsensitiveCompare("Authorization") == .orderedSame }?
         .value
 }
@@ -108,19 +145,21 @@ private func authorized(_ url: URL) -> URLRequest {
 
 @Test("A small request redirected off the origin arrives without the token")
 func aSmallRequestDropsTheTokenOffTheOrigin() async throws {
-    let target = ScriptedServer.expect(.init(chunks: [Data("the blob".utf8)]), host: "storage.invalid")
-    let url = ScriptedServer.expect(.init(redirectsTo: target))
-    let session = ScriptedServer.session(delegate: RedirectWatcher())
+    let server = try ScriptedServer()
+    defer { server.stop() }
+    let target = server.expect(.init(chunks: [Data("the blob".utf8)]), host: "storage.invalid")
+    let url = server.expect(.init(redirectsTo: target))
+    let session = server.session(delegate: RedirectWatcher())
     defer { session.finishTasksAndInvalidate() }
 
     let (data, response) = try await URLSessionTransport(session: session).send(authorized(url))
 
     #expect(response.statusCode == 200)
     #expect(data == Data("the blob".utf8))
-    #expect(authorization(seen: url) == token, "the first request went out without a token")
+    #expect(authorization(seen: url, server: server) == token, "the first request went out without a token")
     #expect(
-        authorization(seen: target) == nil,
-        "the user token was carried to another origin: \(String(describing: authorization(seen: target)))"
+        authorization(seen: target, server: server) == nil,
+        "the user token was carried to another origin: \(String(describing: authorization(seen: target, server: server)))"
     )
 }
 
@@ -129,25 +168,29 @@ func aSmallRequestDropsTheTokenOffTheOrigin() async throws {
 // requests with 401.
 @Test("A small request redirected inside the origin keeps the token")
 func aSmallRequestKeepsTheTokenInsideTheOrigin() async throws {
-    let target = ScriptedServer.expect(.init(chunks: [Data("the blob".utf8)]))
-    let url = ScriptedServer.expect(.init(redirectsTo: target))
-    let session = ScriptedServer.session(delegate: RedirectWatcher())
+    let server = try ScriptedServer()
+    defer { server.stop() }
+    let target = server.expect(.init(chunks: [Data("the blob".utf8)]))
+    let url = server.expect(.init(redirectsTo: target))
+    let session = server.session(delegate: RedirectWatcher())
     defer { session.finishTasksAndInvalidate() }
 
     _ = try await URLSessionTransport(session: session).send(authorized(url))
 
-    #expect(authorization(seen: target) == token, "a hop inside one origin lost the token")
+    #expect(authorization(seen: target, server: server) == token, "a hop inside one origin lost the token")
 }
 
 // The path an original takes, and the one the protocol actually names as
 // answering with a signed storage URL.
 @Test("A download redirected off the origin arrives without the token")
 func aDownloadDropsTheTokenOffTheOrigin() async throws {
+    let server = try ScriptedServer()
+    defer { server.stop() }
     let body = Data("the contents of an original".utf8)
-    let target = ScriptedServer.expect(.init(chunks: [body]), host: "storage.invalid")
-    let url = ScriptedServer.expect(.init(redirectsTo: target))
+    let target = server.expect(.init(chunks: [body]), host: "storage.invalid")
+    let url = server.expect(.init(redirectsTo: target))
     let router = DownloadRouter()
-    let session = ScriptedServer.session(delegate: router)
+    let session = server.session(delegate: router)
     defer { session.finishTasksAndInvalidate() }
 
     let (file, response) = try await router.run(
@@ -159,6 +202,6 @@ func aDownloadDropsTheTokenOffTheOrigin() async throws {
     defer { try? FileManager.default.removeItem(at: file) }
 
     #expect(response.statusCode == 200)
-    #expect(authorization(seen: url) == token)
-    #expect(authorization(seen: target) == nil, "the user token was carried to storage")
+    #expect(authorization(seen: url, server: server) == token)
+    #expect(authorization(seen: target, server: server) == nil, "the user token was carried to storage")
 }

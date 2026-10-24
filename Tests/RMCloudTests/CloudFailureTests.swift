@@ -782,16 +782,10 @@ func aPingAnsweredTwiceResumesOnce() async {
     let coming = Task { try await awaitPong(from: probe) }
     await until("the ping to go out") { probe.isPinging }
 
-    #if canImport(Darwin)
-    let abort = POSIXError(.ECONNABORTED)
-    #else
-    // The bridged `POSIXError` off Apple is built from its raw value.
-    guard let code = POSIXErrorCode(rawValue: ECONNABORTED) else {
-        Issue.record("no POSIX code for ECONNABORTED")
-        return
-    }
-    let abort = POSIXError(code)
-    #endif
+    // Through `NSError` rather than a `POSIXErrorCode` case: the code table is
+    // the platform's, and not every errno this test would like to name exists
+    // in every one of them.
+    let abort = POSIXError(_nsError: NSError(domain: NSPOSIXErrorDomain, code: Int(ECONNABORTED)))
     probe.answerTwice(abort)
 
     await #expect(throws: POSIXError.self) { try await coming.value }

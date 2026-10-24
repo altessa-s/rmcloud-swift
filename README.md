@@ -17,7 +17,7 @@ product.
 
 Everything here was measured against a live account. The schema versions, the hash addressing, the generation dance on a root write, the
 `sourceDeviceDesc` a notification carries, the claims a user token puts in its payload: none of it is invented, and none of it is specified anywhere
-either. That is the asset, and it is the reason for the wall.
+either.
 
 ## What it depends on
 

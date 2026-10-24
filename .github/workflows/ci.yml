@@ -45,7 +45,9 @@ jobs:
       # The Xcode build backend drops NIO test dependencies when RMCloud uses
       # the same products conditionally. The native backend preserves both.
       - run: swift build --build-system native --build-tests
-      - run: swift test --build-system native
+      # Serial: in parallel the transport suites starve each other and the
+      # run stops part-way, here as on Linux.
+      - run: swift test --build-system native --no-parallel
 
   # The toolchain comes from the image rather than from an installer action:
   # in the sibling packages setup-swift answered "Version 6.3 is not available"

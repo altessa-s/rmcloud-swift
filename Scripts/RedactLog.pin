@@ -3,4 +3,4 @@
 # version must be the one `Package.swift` pins; `Scripts/fetch-redactlog.sh`
 # checks that the two agree.
 version = 0.10.0
-sha256 = 538cd46a425b82b76c95bceca522d4634133693f73f2f7f90228174a4628bb8c
+sha256 = 6f27e44b2bf8e595688a6b9f65992f665ff596bcb6c93f4712f2bb9b55ed7250

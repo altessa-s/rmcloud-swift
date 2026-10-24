@@ -48,6 +48,48 @@ enum Redirects {
         return redirect
     }
 
+    /// The redirect as it may be sent once the loading system has had its say.
+    ///
+    /// The loading system builds the redirect request itself, so a delegate is
+    /// handed one whose `Authorization` is already gone. "Kept inside the
+    /// origin" therefore has to mean put back, not left alone — and *which*
+    /// origin is the one the task started from, never the hop before it. A
+    /// chain is what tells the two apart: a second hop that stays on the host
+    /// the first hop was sent to is same-origin with the hop before it, and
+    /// still not ours.
+    static func carryingToken(
+        _ following: URLRequest,
+        startedAt original: URL?,
+        token: String?
+    ) -> URLRequest {
+        guard sameOrigin(original, following.url),
+              following.value(forHTTPHeaderField: authorization) == nil,
+              let token
+        else { return following }
+        var restored = following
+        restored.setValue(token, forHTTPHeaderField: authorization)
+        return restored
+    }
+
+    /// One hop, as every delegate in this package takes it: the rule about the
+    /// origin first, then the token put back where it belongs.
+    ///
+    /// A function of its own, and not three lines inside `followRedirect`,
+    /// because the wiring is the half that leaks: a rule that compares against
+    /// `previous` is wrong however right `carryingToken` is, and only a test
+    /// that drives a real chain can tell the two apart.
+    static func followed(
+        _ redirect: URLRequest,
+        from previous: URL?,
+        startedAt original: URLRequest?
+    ) -> URLRequest {
+        carryingToken(
+            following(redirect, from: previous),
+            startedAt: original?.url,
+            token: original?.value(forHTTPHeaderField: authorization)
+        )
+    }
+
     /// Whether two URLs are the same origin: scheme, host and port, with the
     /// scheme's default port standing in for one nobody wrote down — so that
     /// `https://host` and `https://host:443` are not told apart.
@@ -90,18 +132,11 @@ func followRedirect(
     to request: URLRequest,
     on task: URLSessionTask
 ) -> URLRequest {
-    let previous = response.url ?? task.currentRequest?.url
-    var following = Redirects.following(request, from: previous)
-    // Keeping the token inside the origin cannot mean "leave the header
-    // alone": the loading system builds the redirect request itself and a
-    // delegate is handed one with `Authorization` already gone. So a hop that
-    // stays put is handed the token it started with, and a hop that leaves is
-    // not — the rule above still decides which.
-    if Redirects.sameOrigin(previous, following.url),
-       following.value(forHTTPHeaderField: Redirects.authorization) == nil,
-       let original = task.originalRequest?.value(forHTTPHeaderField: Redirects.authorization) {
-        following.setValue(original, forHTTPHeaderField: Redirects.authorization)
-    }
+    let following = Redirects.followed(
+        request,
+        from: response.url ?? task.currentRequest?.url,
+        startedAt: task.originalRequest
+    )
     if following.value(forHTTPHeaderField: Redirects.authorization)
         != request.value(forHTTPHeaderField: Redirects.authorization) {
         // Worth a line even though nothing failed: the hop is invisible

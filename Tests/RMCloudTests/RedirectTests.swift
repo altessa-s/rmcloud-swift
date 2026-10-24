@@ -56,6 +56,40 @@ func aRedirectInsideTheOriginKeepsTheToken() {
     #expect(carriesToken(hop(from: "https://Sync.Host/a", to: "HTTPS://sync.host/b")))
 }
 
+@Test("A second hop elsewhere is not handed the token back")
+func aSecondHopElsewhereDoesNotGetTheTokenBack() {
+    let started = authorized(
+        URL.constant("https://eu.tectonic.remarkable.com/sync/v3/files/abc")
+    )
+    // Hop 1 leaves the origin, and the loading system hands its request over
+    // with no header — which is what a delegate actually sees.
+    let first = Redirects.followed(
+        URLRequest(url: URL.constant("https://storage.invalid/signed/one")),
+        from: URL.constant("https://eu.tectonic.remarkable.com/sync/v3/files/abc"),
+        startedAt: started
+    )
+    #expect(!carriesToken(first))
+
+    // Hop 2 stays on the host hop 1 was sent to: same-origin with the hop
+    // before it, and nowhere near the task's. Read against `previous` this is
+    // ours, and the storage host is handed a reMarkable credential.
+    let second = Redirects.followed(
+        URLRequest(url: URL.constant("https://storage.invalid/signed/two")),
+        from: URL.constant("https://storage.invalid/signed/one"),
+        startedAt: started
+    )
+    #expect(!carriesToken(second), "a hop inside the storage host got the user token back")
+
+    // The other half, through the same wiring: a hop inside our own origin is
+    // the same conversation and still gets the token back.
+    let inside = Redirects.followed(
+        URLRequest(url: URL.constant("https://eu.tectonic.remarkable.com/storage/abc")),
+        from: URL.constant("https://eu.tectonic.remarkable.com/sync/v3/files/abc"),
+        startedAt: started
+    )
+    #expect(carriesToken(inside))
+}
+
 @Test("A redirect that leaves the origin does not carry the token")
 func aRedirectOffTheOriginDropsTheToken() {
     // The case this exists for: storage answers with a signed URL of its own,

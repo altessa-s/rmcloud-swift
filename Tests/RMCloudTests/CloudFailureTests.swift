@@ -782,7 +782,12 @@ func aPingAnsweredTwiceResumesOnce() async {
     let coming = Task { try await awaitPong(from: probe) }
     await until("the ping to go out") { probe.isPinging }
 
+    #if canImport(Darwin)
     let abort = POSIXError(.ECONNABORTED)
+    #else
+    // The bridged `POSIXError` off Apple is built from its raw value.
+    let abort = POSIXError(POSIXErrorCode(rawValue: ECONNABORTED)!)
+    #endif
     probe.answerTwice(abort)
 
     await #expect(throws: POSIXError.self) { try await coming.value }

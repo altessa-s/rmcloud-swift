@@ -27,7 +27,7 @@ let package = Package(
     // release's `.xcframework` — `Scripts/RedactLog.pin` names it, and
     // `Scripts/fetch-redactlog.sh` checks the two pins agree.
     dependencies: [
-        .package(url: "https://github.com/altessa-s/redactlog-swift.git", exact: "0.10.0"),
+        .package(url: "https://github.com/altessa-s/redactlog-swift.git", exact: "0.10.1"),
         .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.80.0"),
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.27.0"),

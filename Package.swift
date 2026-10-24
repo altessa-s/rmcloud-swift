@@ -8,8 +8,8 @@
 // reverse-engineered — which is exactly why it is worth having behind a wall of
 // its own.
 //
-// One dependency, and it is not a layer: `RedactLog`, for the lines this package
-// writes. Everything else it needs from a host arrives as a port — three secrets
+// Dependencies provide logging, hashing and portable networking. Everything
+// it needs from a host arrives as a port — three secrets
 // through `CloudSecretStoring`, progress as a closure — and everything it answers
 // with is its own: `CloudRoot`, `DocumentIndex`, `CloudError`, `CloudPlan`. It
 // knows of no application, no file system and no window.
@@ -27,18 +27,35 @@ let package = Package(
     // release's `.xcframework` — `Scripts/RedactLog.pin` names it, and
     // `Scripts/fetch-redactlog.sh` checks the two pins agree.
     dependencies: [
-        .package(url: "https://github.com/altessa-s/redactlog-swift.git", exact: "0.9.0"),
+        .package(url: "https://github.com/altessa-s/redactlog-swift.git", exact: "0.10.0"),
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.80.0"),
+        .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.27.0"),
     ],
     targets: [
         .target(
             name: "RMCloud",
-            dependencies: [.product(name: "RedactLog", package: "redactlog-swift")],
+            dependencies: [
+                .product(name: "RedactLog", package: "redactlog-swift"),
+                // Only where CryptoKit is absent: on Apple the system module is
+                // used, and an unconditional product would make every consumer
+                // resolve and link swift-crypto for nothing.
+                .product(name: "Crypto", package: "swift-crypto", condition: .when(platforms: [.linux, .windows])),
+                .product(name: "NIO", package: "swift-nio", condition: .when(platforms: [.linux, .windows])),
+                .product(name: "NIOHTTP1", package: "swift-nio", condition: .when(platforms: [.linux, .windows])),
+                .product(name: "NIOWebSocket", package: "swift-nio", condition: .when(platforms: [.linux, .windows])),
+                .product(name: "NIOSSL", package: "swift-nio-ssl", condition: .when(platforms: [.linux, .windows])),
+            ],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .testTarget(
             name: "RMCloudTests",
             dependencies: [
                 "RMCloud",
+                .product(name: "NIO", package: "swift-nio"),
+                .product(name: "NIOHTTP1", package: "swift-nio"),
+                .product(name: "NIOWebSocket", package: "swift-nio"),
+
                 // Named, and not left to arrive through `RMCloud`: a test that
                 // says `import RedactLog` depends on it itself.
                 .product(name: "RedactLog", package: "redactlog-swift"),

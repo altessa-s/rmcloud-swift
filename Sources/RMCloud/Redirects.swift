@@ -3,6 +3,9 @@
 // found in the LICENSE file.
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import RedactLog
 
 /// What happens to a redirect before this client follows it.
@@ -88,7 +91,17 @@ func followRedirect(
     on task: URLSessionTask
 ) -> URLRequest {
     let previous = response.url ?? task.currentRequest?.url
-    let following = Redirects.following(request, from: previous)
+    var following = Redirects.following(request, from: previous)
+    // Keeping the token inside the origin cannot mean "leave the header
+    // alone": the loading system builds the redirect request itself and a
+    // delegate is handed one with `Authorization` already gone. So a hop that
+    // stays put is handed the token it started with, and a hop that leaves is
+    // not — the rule above still decides which.
+    if Redirects.sameOrigin(previous, following.url),
+       following.value(forHTTPHeaderField: Redirects.authorization) == nil,
+       let original = task.originalRequest?.value(forHTTPHeaderField: Redirects.authorization) {
+        following.setValue(original, forHTTPHeaderField: Redirects.authorization)
+    }
     if following.value(forHTTPHeaderField: Redirects.authorization)
         != request.value(forHTTPHeaderField: Redirects.authorization) {
         // Worth a line even though nothing failed: the hop is invisible

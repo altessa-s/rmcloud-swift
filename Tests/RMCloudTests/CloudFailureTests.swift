@@ -3,6 +3,9 @@
 // found in the LICENSE file.
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 @testable import RMCloud
 import Synchronization
 import Testing
@@ -296,6 +299,8 @@ func aCancellationIsNotANetworkFailure() {
 // `HTTPTransporting` would step over exactly the line in question, so these two
 // go through `URLSessionTransport` itself, with a handler underneath that
 // answers nothing at all.
+#if canImport(Darwin)
+// These tests observe URLProtocol cancellation callbacks, which corelibs Foundation does not deliver.
 @Test("A GET the caller gave up on comes back as a cancellation")
 func aCancelledGetComesBackAsACancellation() async {
     let url = SilentServer.url()
@@ -330,6 +335,8 @@ func aCancelledUploadComesBackAsACancellation() async throws {
     #expect(error as? CloudError == nil, "a cancelled upload was reported as a network failure")
     #expect((error as? URLError)?.code == .cancelled)
 }
+
+#endif
 
 // MARK: - A document nobody is waiting for any more
 
@@ -1089,6 +1096,7 @@ final class ParkingSockets: WebSocketConnecting {
 /// `URLSession` threw — and a double standing in for the transport would step
 /// over exactly that line. Requests are held by URL rather than counted,
 /// because the tests here run side by side and each has to wait for its own.
+#if canImport(Darwin)
 final class SilentServer: URLProtocol {
     private static let held = Mutex<Set<String>>([])
 
@@ -1126,6 +1134,8 @@ final class SilentServer: URLProtocol {
         Self.held.withLock { _ = $0.remove(url) }
     }
 }
+
+#endif
 
 /// A transport that expects to be reached by nothing, and remembers it if it
 /// is.

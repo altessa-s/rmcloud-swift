@@ -3,6 +3,9 @@
 // found in the LICENSE file.
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import RedactLog
 import Synchronization
 
@@ -183,6 +186,9 @@ public struct URLSessionWebSocket: WebSocketConnecting {
     public static let frameLimit = 1 << 20
 
     public func connect(to request: URLRequest) async throws -> any WebSocketReceiving {
+        #if os(Linux) || os(Windows)
+        return try await NIOWebSocketConnector().connect(to: request)
+        #else
         let task = session.webSocketTask(with: request)
         task.maximumMessageSize = Self.frameLimit
         task.resume()
@@ -196,6 +202,7 @@ public struct URLSessionWebSocket: WebSocketConnecting {
             throw refusal
         }
         return socket
+        #endif
     }
 
     /// What a refused handshake actually was.
@@ -225,6 +232,7 @@ public struct URLSessionWebSocket: WebSocketConnecting {
     /// and `cancel` may be called from anywhere — but Foundation does not say
     /// so in the type system. The unchecked conformance is that documented
     /// promise and nothing else: this wrapper holds no state of its own.
+    #if canImport(Darwin)
     private struct Socket: WebSocketReceiving, HandshakePinging, @unchecked Sendable {
         let task: URLSessionWebSocketTask
 
@@ -252,4 +260,5 @@ public struct URLSessionWebSocket: WebSocketConnecting {
             task.cancel(with: .goingAway, reason: nil)
         }
     }
+    #endif
 }

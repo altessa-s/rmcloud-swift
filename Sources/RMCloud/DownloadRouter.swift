@@ -3,6 +3,9 @@
 // found in the LICENSE file.
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import Synchronization
 
 /// The download delegate: progress reports, ceilings and finished files, for
@@ -130,6 +133,9 @@ final class DownloadRouter: NSObject, URLSessionDownloadDelegate, Sendable {
         didCompleteWithError error: (any Error)?
     ) {
         guard let error else { return }
-        finish(task.taskIdentifier, .failure(error))
+        // Named, not logged: a wire-log write from this delegate deadlocks on
+        // Linux, and the naming is what callers branch on.
+        let named = (error as? URLError).map(transportFailure) ?? error
+        finish(task.taskIdentifier, .failure(named))
     }
 }

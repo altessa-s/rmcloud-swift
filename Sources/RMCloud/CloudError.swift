@@ -3,6 +3,9 @@
 // found in the LICENSE file.
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 /// The protocol's errors. HTTP statuses and network failures become these
 /// before they leave the package, so the UI never takes HTTP apart.

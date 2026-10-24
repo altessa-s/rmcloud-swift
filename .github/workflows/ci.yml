@@ -10,12 +10,7 @@
 # compiles when the name changes, just with somebody's token in it — so they run
 # on every push.
 #
-# macOS, and not by preference: the package declares `.macOS(.v15)`, hashes
-# through `CryptoKit` and logs through the unified log, which are Apple's and
-# exist nowhere else. The Xcode is chosen rather than pinned — `Package.swift`
-# asks for tools 6.3, and a runner image pinned to an older Xcode fails to parse
-# the manifest at all, with an error that reads like a syntax error and is not
-# one.
+# Portable builds use the same Swift tools version declared by the package.
 
 name: CI
 
@@ -47,8 +42,34 @@ jobs:
       - uses: actions/checkout@v7
       - name: Use the newest Xcode on the runner
         run: Scripts/ci-select-xcode.sh
-      - run: swift build --build-tests
-      - run: swift test
+      # The Xcode build backend drops NIO test dependencies when RMCloud uses
+      # the same products conditionally. The native backend preserves both.
+      - run: swift build --build-system native --build-tests
+      - run: swift test --build-system native
+
+  # The toolchain comes from the image rather than from an installer action:
+  # in the sibling packages setup-swift answered "Version 6.3 is not available"
+  # for every spelling we tried, while `swift:6.3` is the image the port was
+  # verified in.
+  #
+  # Windows is not in the matrix: there is no image to pull and no installer to
+  # trust for it yet. It is verified by hand in a Windows VM and joins the
+  # matrix when one of the two exists.
+  portable:
+    name: Build and test on Linux
+    runs-on: ubuntu-latest
+    container: swift:6.3
+    steps:
+      - uses: actions/checkout@v7
+      # Not root: the transport tests bind loopback listeners and the file
+      # tests rely on a directory refusing a write, which root is never
+      # refused.
+      - run: |
+          useradd -m builder
+          chown -R builder "$(cd .. && pwd)"
+          # Serial: in parallel, the transport suites starve each other and
+          # the run stalls part-way through. It costs a second.
+          su builder -c "cd '$GITHUB_WORKSPACE' && swift build && swift test --no-parallel"
 
   lint:
     name: SwiftLint

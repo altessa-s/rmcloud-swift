@@ -6,6 +6,9 @@ Unofficial and reverse-engineered — which is exactly why it is worth having be
 A standalone package. It was carved out of a macOS application once it stopped needing anything of it: it asks for the three secrets it holds through
 a port, reports progress as a closure, and answers with types of its own.
 
+Requires Swift 6.3 or later. Targets macOS 15+, iOS 18+, Linux, and Windows.
+The Linux and Windows transports require a portable RedactLog revision; the current 0.9.0 pin still imports Apple-only CryptoKit and OSLog.
+
 ## Why it exists
 
 A protocol nobody documents is learned by watching it, and what you learn ends up written down as code. That code should not also know what a Finder
@@ -18,7 +21,9 @@ either. That is the asset, and it is the reason for the wall.
 
 ## What it depends on
 
-[`RedactLog`](https://github.com/altessa-s/redactlog-swift), for the lines it writes, pinned to a release tag (`exact: "0.9.0"`). Nothing else.
+[`RedactLog`](https://github.com/altessa-s/redactlog-swift), for the lines it writes, pinned to a release tag (`exact: "0.9.0"`). Hashing uses CryptoKit on Apple platforms and swift-crypto elsewhere.
+Linux and Windows use swift-nio and swift-nio-ssl for WebSockets, behind the same transport protocols.
+Apple builds retain the URLSession WebSocket client and do not link NIO into RMCloud.
 
 That was not free, and the seams are worth knowing about.
 

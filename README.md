@@ -23,7 +23,7 @@ either.
 
 ## What it depends on
 
-[`RedactLog`](https://github.com/altessa-s/redactlog-swift), for the lines it writes, pinned to a release tag (`exact: "0.10.0"`). Hashing uses CryptoKit on Apple platforms and swift-crypto elsewhere.
+[`RedactLog`](https://github.com/altessa-s/redactlog-swift), for the lines it writes, pinned to a release tag (`exact: "0.10.1"`). Hashing uses CryptoKit on Apple platforms and swift-crypto elsewhere.
 Linux and Windows use swift-nio and swift-nio-ssl for WebSockets, behind the same transport protocols.
 Apple builds retain the URLSession WebSocket client and do not link NIO into RMCloud.
 

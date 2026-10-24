@@ -2,5 +2,5 @@
 # `RedactLog.xcframework.zip` — the checksum the release notes publish. The
 # version must be the one `Package.swift` pins; `Scripts/fetch-redactlog.sh`
 # checks that the two agree.
-version = 0.10.0
-sha256 = 6f27e44b2bf8e595688a6b9f65992f665ff596bcb6c93f4712f2bb9b55ed7250
+version = 0.10.1
+sha256 = 658917374068f3c957199bf84cc10addacff70c4d3fa2a4c180e79b2f2d92e81

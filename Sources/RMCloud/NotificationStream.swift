@@ -140,6 +140,12 @@ public actor NotificationStream {
                 if isUnauthorized(error), let sent {
                     await tokens.invalidateUserToken(sent)
                 }
+                // Nothing to reconnect to: this platform has no socket at all.
+                // The caller hears it once through `onSignal` and the task ends.
+                if case .unsupportedOnThisPlatform = error as? CloudError {
+                    onSignal(.dropped(error))
+                    return
+                }
                 Log.cloud.debug(
                     "notification socket dropped: \(String(describing: error), .public)"
                 )

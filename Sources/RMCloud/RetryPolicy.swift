@@ -58,6 +58,9 @@ public struct RetryPolicy: Sendable {
         switch error {
         case .transport, .rateLimited:
             true
+        // Missing here is a fact about the platform, not about the attempt.
+        case .unsupportedOnThisPlatform:
+            false
         case .http(let status, _), .writeRejected(let status, _):
             (500...599).contains(status)
         // A root conflict does get retried, but not here: repeating the same

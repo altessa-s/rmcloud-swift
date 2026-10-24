@@ -103,6 +103,13 @@ public enum CloudError: Error, Sendable, Equatable {
     /// with the URL: a document's hash may end up in the URL, and the logs are
     /// no place for it.
     case transport(code: Int)
+    /// Something this platform cannot do at all.
+    ///
+    /// Windows has no `URLSessionWebSocketTask`, and the NIO socket needs a TLS
+    /// stack that does not build there, so the notification channel is absent
+    /// rather than broken. Named apart from `transport` because repeating it
+    /// cannot help: the retry loop must stop and say why.
+    case unsupportedOnThisPlatform(String)
     /// A request that would have asked the cloud about nothing.
     ///
     /// `check-files` is the one call whose question is a list, and the service
@@ -270,7 +277,7 @@ public extension CloudError {
         case .notRegistered, .invalidOneTimeCode, .unauthorized,
              .accountWithoutTablet, .noRootYet, .malformedResponse,
              .rateLimited, .rootConflict, .writeRejected, .transport,
-             .oversizedResponse, .nothingToAsk:
+             .oversizedResponse, .nothingToAsk, .unsupportedOnThisPlatform:
             false
         }
     }

@@ -44,7 +44,7 @@ let package = Package(
                 .product(name: "NIO", package: "swift-nio", condition: .when(platforms: [.linux, .windows])),
                 .product(name: "NIOHTTP1", package: "swift-nio", condition: .when(platforms: [.linux, .windows])),
                 .product(name: "NIOWebSocket", package: "swift-nio", condition: .when(platforms: [.linux, .windows])),
-                .product(name: "NIOSSL", package: "swift-nio-ssl", condition: .when(platforms: [.linux, .windows])),
+                .product(name: "NIOSSL", package: "swift-nio-ssl", condition: .when(platforms: [.linux])),
             ],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),

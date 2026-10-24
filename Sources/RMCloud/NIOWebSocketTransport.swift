@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT-style license that can be
 // found in the LICENSE file.
 
-#if os(Linux) || os(Windows)
+#if os(Linux)
 import Foundation
 #if canImport(FoundationNetworking)
 import FoundationNetworking

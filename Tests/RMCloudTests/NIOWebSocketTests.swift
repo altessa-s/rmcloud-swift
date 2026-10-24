@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT-style license that can be
 // found in the LICENSE file.
 
-#if os(Linux) || os(Windows)
+#if os(Linux)
 import Foundation
 #if canImport(FoundationNetworking)
 import FoundationNetworking
@@ -92,5 +92,29 @@ func nioHandshakeCancellationClosesConnection() async throws {
     connecting.cancel()
     await #expect(throws: CancellationError.self) { try await connecting.value }
     #expect(await server.stops(url))
+}
+#endif
+
+#if os(Windows)
+import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+import Testing
+
+// The platform has no `URLSessionWebSocketTask` and no TLS stack for the NIO
+// socket, so the absence is named where the attempt is made — and named as
+// something not worth retrying.
+@Test("The notification socket is named as unsupported on this platform")
+func theNotificationSocketIsUnsupported() async {
+    let error = await #expect(throws: CloudError.self) {
+        _ = try await URLSessionWebSocket().connect(
+            to: URLRequest(url: URL(string: "wss://example.invalid/notifications")!)
+        )
+    }
+    guard case .unsupportedOnThisPlatform = error else {
+        Issue.record("a missing socket came back as \(String(describing: error))")
+        return
+    }
 }
 #endif

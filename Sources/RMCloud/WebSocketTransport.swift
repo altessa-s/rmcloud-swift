@@ -186,8 +186,14 @@ public struct URLSessionWebSocket: WebSocketConnecting {
     public static let frameLimit = 1 << 20
 
     public func connect(to request: URLRequest) async throws -> any WebSocketReceiving {
-        #if os(Linux) || os(Windows)
+        #if os(Linux)
         return try await NIOWebSocketConnector().connect(to: request)
+        #elseif os(Windows)
+        // Windows has no `URLSessionWebSocketTask`, and the NIO socket needs a
+        // TLS stack that does not build there — swift-nio-ssl refuses the
+        // platform outright. Said once, here, instead of a socket that fails
+        // in a way the reconnect loop would keep repeating.
+        throw CloudError.unsupportedOnThisPlatform("the notification socket")
         #else
         let task = session.webSocketTask(with: request)
         task.maximumMessageSize = Self.frameLimit

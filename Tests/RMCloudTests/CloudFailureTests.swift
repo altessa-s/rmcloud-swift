@@ -782,13 +782,12 @@ func aPingAnsweredTwiceResumesOnce() async {
     let coming = Task { try await awaitPong(from: probe) }
     await until("the ping to go out") { probe.isPinging }
 
-    // Through `NSError` rather than a `POSIXErrorCode` case: the code table is
-    // the platform's, and not every errno this test would like to name exists
-    // in every one of them.
-    let abort = POSIXError(_nsError: NSError(domain: NSPOSIXErrorDomain, code: Int(ECONNABORTED)))
+    // A `URLError` rather than a POSIX one: the test is about the wait being
+    // resumed once, and POSIX's code table is the platform's business.
+    let abort = URLError(.timedOut)
     probe.answerTwice(abort)
 
-    await #expect(throws: POSIXError.self) { try await coming.value }
+    await #expect(throws: URLError.self) { try await coming.value }
 }
 
 // MARK: - Doubles

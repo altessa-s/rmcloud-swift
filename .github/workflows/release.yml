@@ -45,8 +45,11 @@ jobs:
       # A tag is not a promise that the tree is sound. The suites run before
       # anything is published, because a release is the one artefact nobody
       # re-checks: it is linked, not read.
+      # Native backend and serial, for the same reasons the CI job gives:
+      # the Xcode backend drops NIO for the test target, and in parallel the
+      # transport suites starve each other and the run stops part-way.
       - name: Test
-        run: swift test
+        run: swift build --build-system native --build-tests && swift test --build-system native --no-parallel
 
       # The tag reaches the shell through the environment and never through
       # `${{ }}` inside a `run:` block. A tag name is chosen by whoever pushes

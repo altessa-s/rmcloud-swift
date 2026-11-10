@@ -48,6 +48,10 @@ public actor TokenProvider {
     /// The token the server has just refused, kept so that it is not fetched
     /// straight back out of the Keychain. See `invalidateUserToken`.
     private var rejectedUserToken: String?
+    /// This Mac's clock against the server's, in seconds — positive when the
+    /// Mac is ahead — as the last token bought in this process showed it by
+    /// its `iat`; `nil` until one has been bought. See `noteClockSkew`.
+    private var measuredSkew: TimeInterval?
 
     /// Which registration session the tokens in hand belong to.
     ///
@@ -226,7 +230,7 @@ public actor TokenProvider {
         // get away from.
         if let stored = (try? secrets.secret(.userToken)),
            stored != rejectedUserToken,
-           Self.isFresh(stored, at: now()) {
+           Self.isFresh(stored, at: serverNow()) {
             cache(stored)
             return stored
         }
@@ -273,10 +277,58 @@ public actor TokenProvider {
     }
 
     /// Hold `token` in memory, with when it was taken and when it says it dies.
+    ///
+    /// The expiry is moved onto this Mac's clock (`measuredSkew`): `exp` is
+    /// the server's time, and `isUsable` compares it with `now()`, which is
+    /// ours. Without the move a token bought on a Mac six hours ahead of the
+    /// server read as three hours dead the moment it arrived, and every
+    /// request of a sync bought another.
     private func cache(_ token: String) {
         cachedUserToken = token
         cachedAt = now()
-        cachedExpiry = Self.expiry(of: token)
+        cachedExpiry = Self.expiry(of: token)?.addingTimeInterval(measuredSkew ?? 0)
+    }
+
+    /// How far this Mac's clock stands from the server's, in seconds, by the
+    /// last token bought in this process: positive when the Mac is ahead,
+    /// `nil` until a token has been bought here. For a host that wants to
+    /// tell the user their clock is off — the log line is this actor's, the
+    /// window is theirs.
+    public var clockSkew: TimeInterval? { measuredSkew }
+
+    /// "Now" as the server would say it: this Mac's clock less the skew.
+    /// What a token's `exp` and `iat` are compared against.
+    private func serverNow() -> Date {
+        now().addingTimeInterval(-(measuredSkew ?? 0))
+    }
+
+    /// Read the server's clock off a token it has just issued: its `iat` is
+    /// the server's "now", and the difference from ours is the skew every
+    /// later judgement of a token in this process allows for. A token
+    /// without an `iat` leaves the measure as it was.
+    ///
+    /// Why it is measured at all: a token is judged fresh by its own `exp`,
+    /// which is right as long as the two clocks agree, and silently wrong
+    /// when they do not. A Mac hours ahead of the server threw every token
+    /// away at purchase — out of the Keychain too, so the extension never
+    /// found the account — and bought the next one on the very next request,
+    /// until the server answered 429. The network already told us the
+    /// server's time with every token; this is where it is listened to.
+    ///
+    /// Said in the log past `clockSkewTolerance`: a few seconds is the
+    /// request's own flight, hours is a clock that wants setting, and the
+    /// line is what points at it.
+    private func noteClockSkew(of token: String) {
+        guard let issued = Self.issuedAt(of: token) else { return }
+        let skew = now().timeIntervalSince(issued)
+        measuredSkew = skew
+        guard abs(skew) > Self.clockSkewTolerance else { return }
+        Log.cloud.error(
+            """
+            this Mac's clock is \(Int(abs(skew)), .public) s \(skew > 0 ? "ahead of" : "behind", .public) the \
+            server's: tokens are judged in the server's time, and the Mac's date and time want checking
+            """
+        )
     }
 
     /// Take a settled exchange off the record, if it is still the one on
@@ -333,6 +385,8 @@ public actor TokenProvider {
             throw CloudError.notRegistered
         }
 
+        // The skew first, so the expiry cached next is already on our clock.
+        noteClockSkew(of: token)
         cache(token)
         // The server has spoken again, so whatever it refused before is no
         // longer the thing standing in the way — and holding on to it would
@@ -349,7 +403,7 @@ public actor TokenProvider {
         // and several of them at once is how a recovery earns itself the 429
         // this file is written against. The line is what says why.
         do {
-            if Self.isFresh(token, at: now()) {
+            if Self.isFresh(token, at: serverNow()) {
                 try secrets.save(token, as: .userToken)
             } else {
                 try secrets.forget(.userToken)

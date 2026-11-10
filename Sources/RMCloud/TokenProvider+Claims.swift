@@ -41,12 +41,28 @@ extension TokenProvider {
         expiry.timeIntervalSince(moment) > expiryMargin
     }
 
+    /// How far apart the two clocks may be before it is said in the log: the
+    /// flight of the request that bought the token is seconds, a clock that
+    /// wants setting is minutes or hours.
+    static let clockSkewTolerance: TimeInterval = 5 * 60
+
     /// When the token expires, by its own `exp` claim — seconds since the
     /// epoch, as every JWT spells it.
     static func expiry(of token: String) -> Date? {
+        moment(of: "exp", in: token)
+    }
+
+    /// When the token was issued, by its own `iat` claim: the server's clock
+    /// at the moment of the exchange, which is what `TokenProvider` measures
+    /// this Mac's against.
+    static func issuedAt(of token: String) -> Date? {
+        moment(of: "iat", in: token)
+    }
+
+    private static func moment(of claim: String, in token: String) -> Date? {
         guard let claims = JWT.claims(of: token) else { return nil }
         // Both spellings turn up in JSON: a whole number and a double.
-        let seconds = (claims["exp"] as? Double) ?? (claims["exp"] as? Int).map(Double.init)
+        let seconds = (claims[claim] as? Double) ?? (claims[claim] as? Int).map(Double.init)
         return seconds.map { Date(timeIntervalSince1970: $0) }
     }
 

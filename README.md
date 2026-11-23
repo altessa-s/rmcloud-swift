@@ -40,6 +40,16 @@ That was not free, and the seams are worth knowing about.
 - **Diagnostics go to whatever the host installed.** `Log.cloud` on `RedactLog`; the category is declared here, because a package that logs names its own
   channel.
 
+## Handwriting recognition
+
+Call `try await client.recognizeHandwriting(strokes, language: "en-US")` with the
+pen trajectories of a page or selection in scene coordinates. The client uses
+the existing account session and its configured retry policy. Each request accepts
+up to 10,000 strokes, 100,000 total points, and 64 UTF-8 bytes for the language
+tag. Larger inputs throw `HandwritingError.requestTooLarge` before transport. The result contains plain text and the recognized
+words with optional bounding boxes in JIIX millimetres. Empty input completes
+locally. A successful response containing only drawings yields empty text.
+
 ## Design
 
 **The wire can be read.** `RMCLOUD_WIRE_LOG=headers` writes every request and response with its headers; `bodies` adds the ones that are text, JSON or
